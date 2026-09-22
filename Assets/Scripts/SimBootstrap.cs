@@ -6,7 +6,8 @@ public class SimBootstrap : MonoBehaviour
     [Tooltip("Physics/controller loop rate. 250 Hz keeps the rate PIDs crisp.")]
     public int physicsHz = 250;
     public bool vSync = true;
-    public float shadowDistance = 260f;
+    [Tooltip("420m covers farm buildings (~260m) and the far tree-line ring (~330-420m); the persisted Ultra quality preset alone only reaches 150m.")]
+    public float shadowDistance = 420f;
 
     void Awake()
     {

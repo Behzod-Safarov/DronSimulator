@@ -10,11 +10,15 @@ public class CrashDetector : MonoBehaviour
 {
     [Tooltip("Impact speed (m/s) above which a collision counts as a crash")]
     public float crashSpeed = 5f;
+    [Tooltip("Impacts between this and crashSpeed break a prop instead: the quad keeps flying, badly, until you reset")]
+    public float propStrikeSpeed = 2.4f;
+    public bool propDamage = true;
     [Tooltip("Seconds resting upside down before it counts as a crash")]
     public float upsideDownTimeout = 1.5f;
     public bool autoReset = true;
     public float autoResetDelay = 1.5f;
-    public float worldRadius = 300f;
+    [Tooltip("Kept inside the 256m PhysX broadphase world bounds (ProjectSettings/DynamicsManager)")]
+    public float worldRadius = 250f;
 
     public Transform spawnPoint;
     /// <summary>Scenarios that handle impacts themselves (demolition) turn crash detection off.</summary>
@@ -33,6 +37,7 @@ public class CrashDetector : MonoBehaviour
     FlightController fc;
     float upsideDownSince = -1f;
     float crashedAt;
+    float respawnedAt = -10f;
 
     void Awake()
     {
@@ -43,9 +48,20 @@ public class CrashDetector : MonoBehaviour
     void OnCollisionEnter(Collision c)
     {
         float speed = c.relativeVelocity.magnitude;
+        if (Time.time - respawnedAt < 0.5f) return; // settling onto the pad after a respawn is not an impact
         OnImpact?.Invoke(speed);
-        if (!Crashed && !suppressCrashes && speed > crashSpeed)
+        if (Crashed || suppressCrashes) return;
+        if (speed > crashSpeed)
             Crash($"CRASH  ({speed:0.0} m/s)");
+        else if (propDamage && speed > propStrikeSpeed && !drone.Damaged && fc.Armed)
+        {
+            // A clipped gate or a hard landing: the corner nearest the actual impact takes the hit.
+            Vector3 impact = c.contactCount > 0 ? c.GetContact(0).point : transform.position;
+            int motor = NearestMotor(impact);
+            drone.DamageMotor(motor, UnityEngine.Random.Range(0.25f, 0.45f));
+            Fx.Burst(impact, new Color(1f, 0.6f, 0.2f), 25, 4f, 0.03f, 0.6f);
+            ShowMessage($"PROP STRIKE ({speed:0.0} m/s) - land and press R");
+        }
     }
 
     void Update()
@@ -72,6 +88,19 @@ public class CrashDetector : MonoBehaviour
             Crash("Out of bounds");
     }
 
+    int NearestMotor(Vector3 worldPoint)
+    {
+        int best = 0;
+        float bestDist = float.MaxValue;
+        var local = drone.MotorLocalPositions;
+        for (int i = 0; i < local.Length; i++)
+        {
+            float d = Vector3.SqrMagnitude(transform.TransformPoint(local[i]) - worldPoint);
+            if (d < bestDist) { bestDist = d; best = i; }
+        }
+        return best;
+    }
+
     void Crash(string why)
     {
         Crashed = true;
@@ -92,6 +121,7 @@ public class CrashDetector : MonoBehaviour
         GetComponent<PilotInput>()?.ResetKeyboardThrottle();
         Crashed = false;
         upsideDownSince = -1f;
+        respawnedAt = Time.time;
         ShowMessage("Reset - press arm to fly");
     }
 

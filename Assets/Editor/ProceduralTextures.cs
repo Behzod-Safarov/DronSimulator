@@ -174,6 +174,119 @@ public static class ProceduralTextures
         return GeneratedAssets.SaveTexture(dst, name);
     }
 
+    /// <summary>Diagonal diamond-mesh chain-link cutout (alpha holes, gray wire), for fence panels.</summary>
+    public static Texture2D ChainLink(int size = 256, string name = "ChainLink_Cutout")
+    {
+        var e = Existing(name);
+        if (e != null) return e;
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        var px = new Color[size * size];
+        var wire = new Color(0.4f, 0.4f, 0.42f, 1f);
+        const float cell = 10f;       // diamond repeats per texture tile
+        const float wireWidth = 0.09f; // fraction of a cell
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float u = (x + y) / (float)size * cell;
+                float v = (x - y) / (float)size * cell;
+                float fu = Mathf.Abs(u - Mathf.Round(u));
+                float fv = Mathf.Abs(v - Mathf.Round(v));
+                px[y * size + x] = (fu < wireWidth || fv < wireWidth) ? wire : new Color(0f, 0f, 0f, 0f);
+            }
+        tex.SetPixels(px);
+        tex.Apply();
+        return GeneratedAssets.SaveTexture(tex, name);
+    }
+
+    /// <summary>Corrugated sheet-metal albedo+normal (containers, warehouse walls, roll doors):
+    /// vertical ridges plus a few weathered rust/grime streaks. Returns (albedo, normal).</summary>
+    public static (Texture2D albedo, Texture2D normal) CorrugatedMetal(Color baseColor, int size = 512, int seed = 7)
+    {
+        string key = $"Corrugated_{baseColor.r:0.00}_{baseColor.g:0.00}_{baseColor.b:0.00}";
+        var a = Existing(key + "_Albedo");
+        var n = Existing(key + "_Normal");
+        if (a != null && n != null) return (a, n);
+
+        var rng = new System.Random(seed);
+        const int ridges = 22;
+        var height = new float[size * size];
+        var albedo = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        var px = new Color[size * size];
+
+        int streakCount = 4 + rng.Next(0, 4);
+        var streakU = new float[streakCount];
+        var streakSeed = new float[streakCount];
+        for (int i = 0; i < streakCount; i++) { streakU[i] = (float)rng.NextDouble(); streakSeed[i] = (float)rng.NextDouble() * 100f; }
+        var rust = new Color(0.32f, 0.17f, 0.08f);
+
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float u = x / (float)size, v = y / (float)size;
+                float wave = Mathf.Sin(u * ridges * Mathf.PI * 2f);
+                height[y * size + x] = wave * 0.5f + (Mathf.PerlinNoise(u * 40f, v * 6f) - 0.5f) * 0.08f;
+
+                float shade = 0.55f + 0.45f * wave;                   // ridges catch more light - kept strong so it still reads from typical flight distance, not just up close
+                float grime = 0.7f + 0.3f * Mathf.PerlinNoise(u * 5f, v * 4f);
+                float streak = 0f;
+                for (int s = 0; s < streakCount; s++)
+                {
+                    float du = Mathf.Abs(u - streakU[s]); du = Mathf.Min(du, 1f - du);
+                    float run = Mathf.PerlinNoise(streakSeed[s], v * 3f);
+                    streak = Mathf.Max(streak, Mathf.Clamp01(1f - du * 55f) * Mathf.Clamp01(run * 1.4f - 0.15f));
+                }
+                Color c = Color.Lerp(baseColor * shade * grime, rust * shade, streak * 0.55f);
+                c.a = 1f;
+                px[y * size + x] = c;
+            }
+        albedo.SetPixels(px);
+        albedo.Apply();
+        var normal = NormalFromHeight(height, size, 2.4f);
+        var savedA = GeneratedAssets.SaveTexture(albedo, key + "_Albedo");
+        var savedN = GeneratedAssets.SaveTexture(normal, key + "_Normal");
+        return (savedA, savedN);
+    }
+
+    /// <summary>Raw poured-concrete albedo+normal: blotchy weathering, water-stain streaks and fine
+    /// surface grain, for structural concrete (columns, slabs, grandstand tiers, barriers) that
+    /// would otherwise be a single flat colour.</summary>
+    public static (Texture2D albedo, Texture2D normal) WeatheredConcrete(Color baseColor, int size = 512, int seed = 3)
+    {
+        string key = $"Concrete_{baseColor.r:0.00}_{baseColor.g:0.00}_{baseColor.b:0.00}_{seed}";
+        var a = Existing(key + "_Albedo");
+        var n = Existing(key + "_Normal");
+        if (a != null && n != null) return (a, n);
+
+        var height = new float[size * size];
+        var albedo = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        var px = new Color[size * size];
+        var stain = baseColor * 0.62f;
+
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float u = x / (float)size, v = y / (float)size;
+                float blotch = Mathf.PerlinNoise(u * 6f + seed * 17f, v * 6f + seed * 17f);
+                float fine = Mathf.PerlinNoise(u * 55f, v * 55f) - 0.5f;
+                float pit = Mathf.PerlinNoise(u * 90f + 9f, v * 90f + 9f) < 0.12f ? 1f : 0f; // small air-pocket pits
+                height[y * size + x] = fine * 0.25f + (blotch - 0.5f) * 0.15f - pit * 0.3f;
+
+                // Water runs down from the top, so streaks bias vertically (repeat down the V axis).
+                float streak = Mathf.Clamp01((Mathf.PerlinNoise(u * 9f + seed * 5f, v * 2.2f) - 0.58f) * 3.2f) * Mathf.Clamp01(v * 1.5f);
+                Color c = Color.Lerp(baseColor, baseColor * 0.85f, blotch);
+                c = Color.Lerp(c, stain, streak * 0.6f);
+                c *= 1f + fine * 0.12f;
+                c.a = 1f;
+                px[y * size + x] = c;
+            }
+        albedo.SetPixels(px);
+        albedo.Apply();
+        var normal = NormalFromHeight(height, size, 2.2f);
+        var savedA = GeneratedAssets.SaveTexture(albedo, key + "_Albedo");
+        var savedN = GeneratedAssets.SaveTexture(normal, key + "_Normal");
+        return (savedA, savedN);
+    }
+
     static Texture2D NormalFromHeight(float[] h, int size, float strength)
     {
         var tex = new Texture2D(size, size, TextureFormat.RGBA32, false, true);

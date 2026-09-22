@@ -61,9 +61,15 @@ public class FlightController : MonoBehaviour
     [Range(0.3f, 1f)] public float horizonTransition = 0.75f;
 
     [Header("Rate PIDs (output per deg/s)")]
-    public Pid rollRate = new Pid(0.0009f, 0.0016f, 0.000022f);
-    public Pid pitchRate = new Pid(0.0010f, 0.0018f, 0.000025f);
-    public Pid yawRate = new Pid(0.0060f, 0.0080f, 0f);
+    public Pid rollRate = new Pid(0.0009f, 0.0016f, 0.000022f, 0.00003f);
+    public Pid pitchRate = new Pid(0.0010f, 0.0018f, 0.000025f, 0.00003f);
+    public Pid yawRate = new Pid(0.0060f, 0.0080f, 0f, 0.00018f);
+
+    [Header("TPA (throttle PID attenuation)")]
+    [Tooltip("Throttle fraction above which rate-PID P/D gain rolls off, like Betaflight tpa_breakpoint")]
+    [Range(0f, 1f)] public float tpaBreakpoint = 0.55f;
+    [Tooltip("How much P/D is reduced at full throttle above the breakpoint (0 = none, 1 = fully to zero)")]
+    [Range(0f, 1f)] public float tpaRate = 0.25f;
 
     [Header("Simulated gyro")]
     public float gyroNoiseDegPerSec = 0.35f;
@@ -106,7 +112,10 @@ public class FlightController : MonoBehaviour
         if (input.ArmPressed)
         {
             if (Armed) Disarm();
-            else if (input.Throttle < 0.1f || (beginnerThrottleAssist && mode != FlightMode.Acro)) Arm();
+            // Always require raw stick low to arm, even with beginnerThrottleAssist on - that
+            // assist only reshapes the throttle curve after arming, it must never let the
+            // motors spin up to near-full thrust the instant they start (real quads don't).
+            else if (input.Throttle < 0.1f) Arm();
         }
 
         if (input.ModePressed)
@@ -170,16 +179,16 @@ public class FlightController : MonoBehaviour
         switch (mode)
         {
             case FlightMode.Angle:
-                targetPitchRate = LevelRate(input.Pitch * angleLimitDeg, PitchDeg);
-                targetRollRate = LevelRate(-input.Roll * angleLimitDeg, RollDeg);
+                targetPitchRate = LevelRate(input.Pitch * angleLimitDeg, PitchDeg, pitchRates.maxRate);
+                targetRollRate = LevelRate(-input.Roll * angleLimitDeg, RollDeg, rollRates.maxRate);
                 break;
 
             case FlightMode.Horizon:
             {
                 float stick = Mathf.Max(Mathf.Abs(input.Pitch), Mathf.Abs(input.Roll));
                 float level = Mathf.Clamp01(1f - stick / horizonTransition);
-                targetPitchRate = LevelRate(input.Pitch * angleLimitDeg, PitchDeg) * level + acroPitch * (1f - level);
-                targetRollRate = LevelRate(-input.Roll * angleLimitDeg, RollDeg) * level + acroRoll * (1f - level);
+                targetPitchRate = LevelRate(input.Pitch * angleLimitDeg, PitchDeg, pitchRates.maxRate) * level + acroPitch * (1f - level);
+                targetRollRate = LevelRate(-input.Roll * angleLimitDeg, RollDeg, rollRates.maxRate) * level + acroRoll * (1f - level);
                 break;
             }
 
@@ -205,6 +214,11 @@ public class FlightController : MonoBehaviour
 
         bool restingOnGround = drone.IsGrounded && t < 0.03f;
 
+        // TPA: roll P/D off above a throttle breakpoint, the way Betaflight tames D-term
+        // oscillation/prop-wash near full throttle instead of needing the whole loop detuned
+        // for the worst-case high-throttle case.
+        float tpa = throttle > tpaBreakpoint ? 1f - (throttle - tpaBreakpoint) / (1f - tpaBreakpoint) * tpaRate : 1f;
+
         // --- Rate PIDs ----------------------------------------------------
         float outX, outY, outZ;
         if (restingOnGround && !airMode)
@@ -214,13 +228,16 @@ public class FlightController : MonoBehaviour
         }
         else
         {
-            outX = pitchRate.Update(targetPitchRate, w.x, dt);
-            outY = yawRate.Update(targetYawRate, w.y, dt);
-            outZ = rollRate.Update(targetRollRate, w.z, dt);
+            outX = pitchRate.Update(targetPitchRate, w.x, dt, tpa);
+            outY = yawRate.Update(targetYawRate, w.y, dt, tpa);
+            outZ = rollRate.Update(targetRollRate, w.z, dt, tpa);
             if (restingOnGround)
             {
-                // Air mode keeps the loop alive but don't wind up against the ground.
-                rollRate.Reset(); pitchRate.Reset(); yawRate.Reset();
+                // Air mode keeps the loop alive but don't wind up against the ground - only the
+                // integral needs clearing here; wiping the whole Pid (old Reset() call) also
+                // zeroed the D filter every single frame at idle, killing damping right when the
+                // loop is most likely to be twitchy.
+                rollRate.ResetIntegral(); pitchRate.ResetIntegral(); yawRate.ResetIntegral();
                 outX *= 0.2f; outY *= 0.2f; outZ *= 0.2f;
             }
         }
@@ -256,10 +273,9 @@ public class FlightController : MonoBehaviour
         m[3] = Mathf.Clamp01(throttle + mRR);
     }
 
-    float LevelRate(float targetAngle, float currentAngle)
+    float LevelRate(float targetAngle, float currentAngle, float maxRate)
     {
-        float max = Mathf.Max(rollRates.maxRate, pitchRates.maxRate);
-        return Mathf.Clamp((targetAngle - currentAngle) * angleP, -max, max);
+        return Mathf.Clamp((targetAngle - currentAngle) * angleP, -maxRate, maxRate);
     }
 
     float Gauss(int axis)

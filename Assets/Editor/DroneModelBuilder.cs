@@ -66,11 +66,11 @@ public static class DroneModelBuilder
         var (carbonA, carbonN) = ProceduralTextures.CarbonWeave();
         var brushed = ProceduralTextures.BrushedMetalNormal();
 
-        var carbon = SceneBuilder.Mat("Carbon", Color.white, glossiness: 0.62f, metallic: 0.05f);
+        var carbon = SceneBuilder.Mat("Carbon", Color.white, glossiness: 0.68f, metallic: 0.08f);
         carbon.mainTexture = carbonA;
         carbon.mainTextureScale = new Vector2(6f, 6f);
         carbon.SetTexture("_BumpMap", carbonN);
-        carbon.SetFloat("_BumpScale", 0.9f);
+        carbon.SetFloat("_BumpScale", 1.3f);
         carbon.EnableKeyword("_NORMALMAP");
 
         Material Metal(string name, Color c, float smooth, float metal, bool brushedNormal)
@@ -94,8 +94,8 @@ public static class DroneModelBuilder
             silver = Metal("Silver", new Color(0.62f, 0.62f, 0.64f), 0.75f, 0.9f, false),
             tpu = SceneBuilder.Mat("Tpu", new Color(0.05f, 0.05f, 0.055f), glossiness: 0.28f),
             tpuAccent = SceneBuilder.Mat("TpuAccent", accent * 0.9f, glossiness: 0.3f),
-            prop = SceneBuilder.Mat("PropBlade", new Color(1f, 0.5f, 0.06f), glossiness: 0.55f),
-            disc = SceneBuilder.Mat("PropDisc", new Color(1f, 0.55f, 0.08f, 0.25f), transparent: true),
+            prop = SceneBuilder.Mat("PropBlade", new Color(0.85f, 0.4f, 0.045f), glossiness: 0.62f, metallic: 0.06f),
+            disc = SceneBuilder.Mat("PropDisc", new Color(0.85f, 0.42f, 0.06f, 0.25f), transparent: true),
             battery = SceneBuilder.Mat("Battery", new Color(0.03f, 0.035f, 0.06f), glossiness: 0.4f),
             strap = SceneBuilder.Mat("Strap", new Color(0.08f, 0.08f, 0.08f), glossiness: 0.12f),
             wire = SceneBuilder.Mat("Wire", new Color(0.03f, 0.03f, 0.03f), glossiness: 0.5f),

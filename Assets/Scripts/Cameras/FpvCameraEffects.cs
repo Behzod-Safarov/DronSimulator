@@ -33,6 +33,7 @@ public class FpvCameraEffects : MonoBehaviour
     public DronePhysics drone;
     public float jelloDegrees = 0.12f;
 
+    const int MaxRingFrames = 12;
     Material mat;
     RenderTexture[] ring;
     float[] stamps;
@@ -96,21 +97,27 @@ public class FpvCameraEffects : MonoBehaviour
             return;
         }
 
-        // --- Latency: keep a ring of past frames and show the one that is ~latency old.
-        int frames = Mathf.Clamp(Mathf.CeilToInt(latencyMs / 1000f / Mathf.Max(1f / 240f, Time.unscaledDeltaTime)) + 1, 1, 12);
-        if (ring == null || ring.Length != frames || ring[0].width != src.width || ring[0].height != src.height)
+        // --- Latency: keep a fixed-size ring of past frames and show the one that is ~latency old.
+        // The ring is sized once to the max clamp and only reallocated on an actual resolution
+        // change - resizing it every time the frame-count estimate jitters across an integer
+        // boundary (which happens constantly under normal frame-time noise) would tear down and
+        // rebuild every RenderTexture and invalidate every stamp, momentarily collapsing the
+        // simulated latency to ~0 right when it just reset. LDR (ARGB32) is plenty since the
+        // analog pass immediately desaturates/degrades the image anyway.
+        if (ring == null || ring[0].width != src.width || ring[0].height != src.height)
         {
             ReleaseRing();
-            ring = new RenderTexture[frames];
-            stamps = new float[frames];
-            for (int i = 0; i < frames; i++)
+            ring = new RenderTexture[MaxRingFrames];
+            stamps = new float[MaxRingFrames];
+            for (int i = 0; i < MaxRingFrames; i++)
             {
-                ring[i] = new RenderTexture(src.width, src.height, 0, src.format);
+                ring[i] = new RenderTexture(src.width, src.height, 0, RenderTextureFormat.ARGB32);
                 ring[i].Create();
                 stamps[i] = -1f;
             }
             head = 0;
         }
+        int frames = Mathf.Clamp(Mathf.CeilToInt(latencyMs / 1000f / Mathf.Max(1f / 240f, Time.unscaledDeltaTime)) + 1, 1, MaxRingFrames);
         Graphics.Blit(src, ring[head]);
         stamps[head] = Time.unscaledTime;
 
@@ -118,12 +125,12 @@ public class FpvCameraEffects : MonoBehaviour
         int pick = head;
         for (int k = 0; k < frames; k++)
         {
-            int idx = (head - k + frames) % frames;
+            int idx = (head - k + MaxRingFrames) % MaxRingFrames;
             if (stamps[idx] < 0f) break;
             pick = idx;
             if (stamps[idx] <= want) break;
         }
-        head = (head + 1) % frames;
+        head = (head + 1) % MaxRingFrames;
 
         // --- Signal quality from range + occlusion.
         float breakup = 0f, noise = baseNoise;

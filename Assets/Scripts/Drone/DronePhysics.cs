@@ -64,6 +64,12 @@ public class DronePhysics : MonoBehaviour
     public float angularDamping = 0.02f;
     public float airDensity = 1.225f;
 
+    [Header("Damage & prop wash")]
+    [Tooltip("Thrust loss when descending fast through the props' own wake (vortex ring state)")]
+    [Range(0f, 0.5f)] public float propwashThrustLoss = 0.18f;
+    [Tooltip("Random torque from prop wash at full effect, N·m")]
+    public float propwashTorque = 0.12f;
+
     [Header("Payload")]
     [Tooltip("Extra mass carried (kg) - set by scenarios that hang things under the drone")]
     public float payloadMass;
@@ -79,6 +85,17 @@ public class DronePhysics : MonoBehaviour
     public readonly float[] MotorOmega = new float[4];
     /// <summary>Thrust in newtons produced this step.</summary>
     public readonly float[] MotorThrust = new float[4];
+    /// <summary>1 = intact, lower = damaged prop (less thrust, asymmetric). Reset on respawn.</summary>
+    public readonly float[] MotorHealth = { 1f, 1f, 1f, 1f };
+
+    public bool Damaged { get { for (int i = 0; i < 4; i++) if (MotorHealth[i] < 1f) return true; return false; } }
+    /// <summary>0..1 strength of the prop-wash / vortex-ring effect this step (for the OSD).</summary>
+    public float Propwash { get; private set; }
+
+    public void DamageMotor(int index, float health)
+    {
+        MotorHealth[Mathf.Clamp(index, 0, 3)] = Mathf.Clamp01(health);
+    }
 
     public bool MotorsEnabled { get; set; }
     public bool IsGrounded => Time.fixedTime - lastGroundContact < 0.05f;
@@ -162,19 +179,29 @@ public class DronePhysics : MonoBehaviour
     {
         float dt = Time.fixedDeltaTime;
         float totalMass = mass + Mathf.Max(0f, payloadMass);
-        if (!Mathf.Approximately(rb.mass, totalMass)) rb.mass = totalMass;
+        if (!Mathf.Approximately(rb.mass, totalMass))
+        {
+            rb.mass = totalMass;
+            // Keep rotational inertia consistent with the carried payload (e.g. water balloons) -
+            // rb.mass alone doesn't touch inertiaTensor, so without this a loaded drone kept the
+            // empty airframe's inertia and spun unrealistically easily in roll/pitch.
+            rb.inertiaTensor = inertia * (totalMass / mass);
+        }
 
         // --- Environment -------------------------------------------------
-        WindVelocity = Wind.Sample(transform.position, Time.fixedTime);
+        WindVelocity = Wind.Sample(transform.position, Time.fixedTime, HeightAboveGround);
         Vector3 v = rb.GetVelocity();
         AirVelocity = v - WindVelocity;
         Vector3 airLocal = transform.InverseTransformDirection(AirVelocity);
         Vector3 omegaBody = transform.InverseTransformDirection(rb.angularVelocity);
 
-        if (Physics.Raycast(transform.position, Vector3.down, out var hit, 5f, ~0, QueryTriggerInteraction.Ignore))
+        // 500m covers normal flight altitudes; a short 5m raycast left AGL telemetry frozen at
+        // 5.00 for most of a flight (ground effect below only ever cares about the first few
+        // metres anyway, so the longer range doesn't change that behaviour).
+        if (Physics.Raycast(transform.position, Vector3.down, out var hit, 500f, ~0, QueryTriggerInteraction.Ignore))
             HeightAboveGround = hit.distance;
         else
-            HeightAboveGround = 5f;
+            HeightAboveGround = 500f;
 
         // Ground effect (Cheeseman–Bennett), capped so it can't explode on contact.
         float ge = 1f;
@@ -194,6 +221,14 @@ public class DronePhysics : MonoBehaviour
         BatteryVolts = Mathf.Max(0f, openCircuitVolts - BatteryCurrent * internalResistance);
         float omegaMax = loadedSpeedFraction * motorKv * RpmToRad * BatteryVolts;
         bool motorsOn = MotorsEnabled && !BatteryDead;
+
+        // Prop wash / vortex ring state: sinking fast with little forward speed means the props
+        // are chewing their own turbulent wake - thrust drops and the quad wobbles.
+        float sink = -airLocal.y;
+        float horiz = new Vector2(airLocal.x, airLocal.z).magnitude;
+        Propwash = Mathf.Clamp01((sink - 2.5f) / 3f) * Mathf.Clamp01(1f - horiz / 5f);
+        if (Propwash > 0f)
+            rb.AddRelativeTorque(new Vector3(Random.Range(-1f, 1f), Random.Range(-0.3f, 0.3f), Random.Range(-1f, 1f)) * (Propwash * propwashTorque));
 
         // --- Motors -------------------------------------------------------
         float yawTorque = 0f;
@@ -218,6 +253,7 @@ public class DronePhysics : MonoBehaviour
                 thrust *= Mathf.Clamp(inflow, 0.15f, 1.3f);
             }
             thrust *= ge;
+            thrust *= MotorHealth[i] * (1f - propwashThrustLoss * Propwash);
             MotorThrust[i] = thrust;
 
             rb.AddForceAtPosition(transform.up * thrust, transform.TransformPoint(MotorLocalPositions[i]));
@@ -281,6 +317,7 @@ public class DronePhysics : MonoBehaviour
             MotorCommand[i] = 0f;
             MotorOmega[i] = 0f;
             MotorThrust[i] = 0f;
+            MotorHealth[i] = 1f;
         }
         lastGroundContact = -10f;
     }

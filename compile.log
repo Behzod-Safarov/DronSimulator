@@ -1,0 +1,23 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.3/staging' branch; Version is '6000.3.24f1 (4e7b9b5b6244) revision 5143451'; Using compiler version '194234433'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-b.chsafarov" at "2026-09-22T04:07:59.2860046Z"
+OS: 'Windows 11  (10.0.26200) Professional' Language: 'en' Physical Memory: 32359 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-09-22T04:07:59Z
+
+COMMAND LINE ARGUMENTS:
+C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Unity.exe
+-batchmode
+-nographics
+-projectPath
+E:\utc\work\DroneTrainer
+-executeMethod
+SceneBuilder.CompileCheck
+-logFile
+E:\utc\work\DroneTrainer\compile.log
+-quit
+Successfully changed project path to: E:\utc\work\DroneTrainer
+E:/utc/work/DroneTrainer
+Exiting without the bug reporter. Application will terminate with return code 1

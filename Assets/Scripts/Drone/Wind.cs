@@ -42,7 +42,7 @@ public class Wind : MonoBehaviour
         }
     }
 
-    public Vector3 VelocityAt(Vector3 position, float time)
+    public Vector3 VelocityAt(Vector3 position, float time, float heightAboveGround)
     {
         if (meanSpeed <= 0f && turbulence <= 0f) return Vector3.zero;
 
@@ -57,13 +57,15 @@ public class Wind : MonoBehaviour
         v.y += (Mathf.PerlinNoise(seed + 11f + px, pz + tt) - 0.5f) * 2f * turbulence * 0.5f;
         v.z += (Mathf.PerlinNoise(seed + 23f + pz + tt, px) - 0.5f) * 2f * turbulence;
 
-        // Boundary layer: calmer close to the ground.
-        float shear = Mathf.Clamp01(position.y / Mathf.Max(0.1f, groundShearHeight));
+        // Boundary layer: calmer close to the ground - height above the actual terrain, not raw
+        // world Y, so this stays correct on the project's hilly, non-flat ground (full-strength
+        // wind at a hilltop's ground level, calm wind low over a valley, not the other way round).
+        float shear = Mathf.Clamp01(heightAboveGround / Mathf.Max(0.1f, groundShearHeight));
         return v * Mathf.Lerp(0.3f, 1f, shear);
     }
 
-    public static Vector3 Sample(Vector3 position, float time)
+    public static Vector3 Sample(Vector3 position, float time, float heightAboveGround)
     {
-        return Instance != null ? Instance.VelocityAt(position, time) : Vector3.zero;
+        return Instance != null ? Instance.VelocityAt(position, time, heightAboveGround) : Vector3.zero;
     }
 }

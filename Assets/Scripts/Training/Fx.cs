@@ -4,7 +4,7 @@ using UnityEngine;
 public static class Fx
 {
     static Material particleMat;
-    static AudioClip pop, splash, ding, boom;
+    static AudioClip pop, splash, ding, boom, tick, confirm, whoosh;
 
     static Material ParticleMaterial()
     {
@@ -75,6 +75,31 @@ public static class Fx
     public static void PlayDing(Vector3 pos) => AudioSource.PlayClipAtPoint(ding ??= Synth("Ding", 0.6f, (t, r) => (Mathf.Sin(2f * Mathf.PI * 1320f * t) + 0.5f * Mathf.Sin(2f * Mathf.PI * 2640f * t)) * 0.4f * Mathf.Exp(-t * 6f)), pos, 0.7f);
 
     public static void PlayBoom(Vector3 pos) => AudioSource.PlayClipAtPoint(boom ??= Synth("Boom", 1.6f, (t, r) => (r * 0.7f * Mathf.Exp(-t * 3.5f) + Mathf.Sin(2f * Mathf.PI * 48f * t * (1f + 2f * Mathf.Exp(-t * 6f))) * 0.6f * Mathf.Exp(-t * 2.2f)) * (t < 0.01f ? t / 0.01f : 1f)), pos, 1f);
+
+    // ---- UI sounds (2-D, at the listener) ----
+    public static void PlayTick() => Play2D(tick ??= Synth("Tick", 0.08f, (t, r) => Mathf.Sin(2f * Mathf.PI * 2200f * t) * 0.35f * Mathf.Exp(-t * 60f)), 0.5f);
+    public static void PlayConfirm() => Play2D(confirm ??= Synth("Confirm", 0.35f, (t, r) => (Mathf.Sin(2f * Mathf.PI * 880f * t) + 0.6f * Mathf.Sin(2f * Mathf.PI * 1320f * (t - 0.08f)) * (t > 0.08f ? 1f : 0f)) * 0.35f * Mathf.Exp(-t * 9f)), 0.7f);
+    public static void PlayWhoosh() => Play2D(whoosh ??= Synth("Whoosh", 0.9f, (t, r) => r * 0.5f * Mathf.Sin(Mathf.PI * Mathf.Clamp01(t / 0.9f)) * Mathf.Sin(Mathf.PI * Mathf.Clamp01(t / 0.9f))), 0.6f);
+    /// <summary>Rising chime for the results stars: pitch step 0..2.</summary>
+    public static void PlayStar(int step)
+    {
+        float f = 1046f * Mathf.Pow(1.25f, step);
+        Play2D(Synth("Star" + step, 0.7f, (t, r) => (Mathf.Sin(2f * Mathf.PI * f * t) + 0.4f * Mathf.Sin(2f * Mathf.PI * f * 2f * t)) * 0.4f * Mathf.Exp(-t * 4.5f)), 0.8f);
+    }
+
+    static void Play2D(AudioClip clip, float volume)
+    {
+        var listener = Object.FindFirstObjectByType<AudioListener>();
+        var go = new GameObject("UI sound");
+        if (listener != null) go.transform.position = listener.transform.position;
+        var src = go.AddComponent<AudioSource>();
+        src.clip = clip;
+        src.spatialBlend = 0f;
+        src.volume = volume;
+        src.ignoreListenerPause = true;
+        src.Play();
+        Object.Destroy(go, clip.length + 0.1f);
+    }
 
     static AudioClip Synth(string name, float seconds, System.Func<float, float, float> f)
     {

@@ -1,14 +1,22 @@
 using UnityEngine;
 
 /// <summary>
-/// Base class for a scored training exercise. LessonManager drives Begin/Tick
-/// and forwards crash events.
+/// Base class for a scored training drill. LessonManager drives Begin/Tick, forwards
+/// crash events and records the result (stars, best score) between sessions.
+/// Drills are grouped into disciplines (Basics, Racing, Freestyle, ...) by the
+/// <see cref="discipline"/> string, in hierarchy order.
 /// </summary>
 public abstract class Lesson : MonoBehaviour
 {
     public string title = "Lesson";
     [TextArea(2, 5)] public string instructions = "";
-    [Tooltip("Flight mode suggested for this lesson (shown in the OSD)")]
+    [Tooltip("Training discipline this drill belongs to (drills of one discipline run in order)")]
+    public string discipline = "Basics";
+    [Tooltip("Where the drone starts for this drill (null = the pit)")]
+    public Transform spawn;
+    [Tooltip("Venue name shown in the menus")]
+    public string venue = "Pit field";
+    [Tooltip("Flight mode suggested for this drill (shown in the OSD)")]
     public FlightMode recommendedMode = FlightMode.Angle;
     [Tooltip("Time in seconds under which no time penalty applies")]
     public float parTime = 30f;
@@ -27,7 +35,32 @@ public abstract class Lesson : MonoBehaviour
         ? Mathf.Clamp(Mathf.RoundToInt(100 - Crashes * pointsPerCrash - Mathf.Max(0f, Elapsed - parTime) * pointsPerSecondOverPar), 0, 100)
         : 0;
 
+    /// <summary>0-3 stars for the current run.</summary>
+    public int Stars => !Completed ? 0 : Score >= 90 ? 3 : Score >= 65 ? 2 : Score >= 35 ? 1 : 0;
+
     public abstract string Status { get; }
+
+    /// <summary>Title / briefing in the current UI language (the English title stays the save key).</summary>
+    public string DisplayTitle => Loc.T(title);
+    public string DisplayInstructions => Loc.T(instructions);
+
+    /// <summary>Optional big centre-screen text (countdowns, trick call-outs). Null = nothing.</summary>
+    public virtual string Banner => null;
+
+    // ---- persistent progress ----------------------------------------------------
+    string Key => "drill." + title.Replace(' ', '_');
+    public int BestStars => PlayerPrefs.GetInt(Key + ".stars", 0);
+    public int BestScore => PlayerPrefs.GetInt(Key + ".score", 0);
+    public int Attempts => PlayerPrefs.GetInt(Key + ".attempts", 0);
+
+    public void RecordResult()
+    {
+        if (!Completed) return;
+        if (Stars > BestStars) PlayerPrefs.SetInt(Key + ".stars", Stars);
+        if (Score > BestScore) PlayerPrefs.SetInt(Key + ".score", Score);
+        PlayerPrefs.SetInt(Key + ".attempts", Attempts + 1);
+        PlayerPrefs.Save();
+    }
 
     public virtual void Begin(DronePhysics drone, FlightController fc, CrashDetector crash)
     {

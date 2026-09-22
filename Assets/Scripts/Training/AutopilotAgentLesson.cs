@@ -14,6 +14,13 @@ public class AutopilotAgentLesson : Lesson
 
     Autopilot ap;
 
+    // The base time-vs-par formula doesn't fit this drill: mission duration is set entirely by
+    // Autopilot's own cruise speed/gains, not by anything the pilot does, and Completed can only
+    // ever become true via a clean Phase.Done (any manual takeover or crash sends the agent to
+    // Phase.Manual, which nothing here ever recovers from back to Done). So "completed" already
+    // means "the agent flew the whole mission hands-off, no crash" - reward that outright.
+    public override int Score => Completed ? 100 : 0;
+
     public override string Status
     {
         get

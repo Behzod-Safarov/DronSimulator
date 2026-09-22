@@ -97,6 +97,24 @@ public static class SceneBuilder
         EnterPlayWhenReady();
     }
 
+    /// <summary>Builds a standalone Windows player into Build/DroneTrainer.exe (menu or -executeMethod).</summary>
+    [MenuItem("Drone Trainer/Build Windows .exe")]
+    public static void BuildPlayer()
+    {
+        if (!System.IO.File.Exists(ScenePath)) Build();
+        string outDir = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Application.dataPath), "Build");
+        System.IO.Directory.CreateDirectory(outDir);
+        var options = new BuildPlayerOptions
+        {
+            scenes = new[] { ScenePath },
+            locationPathName = System.IO.Path.Combine(outDir, "DroneTrainer.exe"),
+            target = BuildTarget.StandaloneWindows64,
+            options = BuildOptions.None,
+        };
+        var report = BuildPipeline.BuildPlayer(options);
+        Debug.Log($"<b>Drone Trainer</b>: player build {report.summary.result} -> {options.locationPathName} ({report.summary.totalSize / 1048576} MB, {report.summary.totalErrors} errors)");
+    }
+
     // ------------------------------------------------------------------ sky
 
     static void SetupSkyAndFog(Light sun)
@@ -124,7 +142,7 @@ public static class SceneBuilder
         RenderSettings.ambientMode = AmbientMode.Skybox;
         RenderSettings.ambientIntensity = 1.0f;
         RenderSettings.defaultReflectionMode = DefaultReflectionMode.Skybox;
-        RenderSettings.defaultReflectionResolution = 256;
+        RenderSettings.defaultReflectionResolution = 512;
         RenderSettings.reflectionIntensity = 1f;
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.ExponentialSquared;
@@ -250,19 +268,37 @@ public static class SceneBuilder
         data.size = new Vector3(TerrainSize, TerrainHeight, TerrainSize);
 
         var heights = new float[res, res];
+        var hillsRaw = new float[res, res];
+        for (int y = 0; y < res; y++)
+            for (int x = 0; x < res; x++)
+            {
+                float wx = (x / (float)(res - 1) - 0.5f) * TerrainSize;
+                float wz = (y / (float)(res - 1) - 0.5f) * TerrainSize;
+                hillsRaw[y, x] = Mathf.PerlinNoise(1000f + wx * 0.004f, 500f + wz * 0.004f) * 0.7f
+                               + Mathf.PerlinNoise(2000f + wx * 0.015f, 700f + wz * 0.015f) * 0.3f;
+            }
+        // Thermal erosion on the large-scale hill shape, before any fine detail is added - pure
+        // Perlin hills read as smooth rounded blobs; a few relaxation passes (move height downhill
+        // wherever the local slope exceeds a talus threshold) carve believable ridgelines and
+        // drainage gullies without a hand-authored heightmap.
+        ThermalErode(hillsRaw, res, 25, 0.010f, 0.5f);
+
         for (int y = 0; y < res; y++)
             for (int x = 0; x < res; x++)
             {
                 float wx = (x / (float)(res - 1) - 0.5f) * TerrainSize;
                 float wz = (y / (float)(res - 1) - 0.5f) * TerrainSize;
                 float r = Mathf.Sqrt(wx * wx + wz * wz);
-                float hills = Mathf.PerlinNoise(1000f + wx * 0.004f, 500f + wz * 0.004f) * 0.7f
-                            + Mathf.PerlinNoise(2000f + wx * 0.015f, 700f + wz * 0.015f) * 0.3f;
+                float hills = hillsRaw[y, x];
                 float micro = (Mathf.PerlinNoise(3000f + wx * 0.08f, 900f + wz * 0.08f) - 0.5f) * 0.004f; // gentle undulation in the field
+                // Rock-scale roughness added AFTER erosion (it stands for already-weathered surface
+                // grain, not something erosion should itself smooth away). Rides everywhere `flat` allows.
+                float rock = (Mathf.PerlinNoise(4000f + wx * 0.05f, 300f + wz * 0.05f) - 0.5f) * 0.012f;
                 float flat = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 110f) / 150f));
                 float far = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 300f) / 200f));
                 float fieldMask = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 30f) / 60f));
-                float h = hills * (0.06f + 0.25f * far) * flat + micro * fieldMask;
+                float h = (hills * (0.06f + 0.25f * far) * flat + micro * fieldMask + rock * flat) * (1f - VenueBuilder.Flat(wx, wz));
+                h -= VenueBuilder.Pond(wx, wz) * 0.04f; // carve the farm pond's basin (~3.2 m deep)
                 heights[y, x] = 0.0125f + h;
             }
         data.SetHeights(0, 0, heights);
@@ -270,8 +306,10 @@ public static class SceneBuilder
         // Layers from the Poly Haven texture sets
         var turf = ProceduralTextures.GreenGrade("Assets/External/PolyHaven/leafy_grass_Diffuse.jpg", "Turf_Diffuse");
         var grass = TerrainLayerAsset("GrassLayer", "leafy_grass", 3f, turf);
-        var dry = TerrainLayerAsset("DryGrassLayer", "aerial_grass_rock", 5f);
-        var dirt = TerrainLayerAsset("DirtLayer", "dirt_aerial_02", 4f);
+        // Larger tiles on the photo-scanned aerial sets: at 4-5 m the repeat was obvious from
+        // any low, grazing chase/FPV angle (diagonal streak pattern marching across the yard).
+        var dry = TerrainLayerAsset("DryGrassLayer", "aerial_grass_rock", 7f);
+        var dirt = TerrainLayerAsset("DirtLayer", "dirt_aerial_02", 6.5f);
         var gravel = TerrainLayerAsset("GravelLayer", "gravel_road", 3f);
         data.terrainLayers = new[] { grass, dirt, gravel, dry };
 
@@ -286,11 +324,19 @@ public static class SceneBuilder
                 float r = Mathf.Sqrt(wx * wx + wz * wz);
                 float n = Mathf.PerlinNoise(3000f + wx * 0.02f, 900f + wz * 0.02f);
                 float d = Mathf.Clamp01((n - 0.62f) * 5f) * 0.8f;
-                float g = Mathf.Max(GravelTrack(wx, wz), PitApron(wx, wz));
+                float g = Mathf.Max(PitApron(wx, wz), VenueBuilder.Gravel(wx, wz));
+                d = Mathf.Max(d, VenueBuilder.Dirt(wx, wz) * 0.95f);
                 // lush mown turf on the flying field, drier grass further out
                 float dryN = Mathf.PerlinNoise(7000f + wx * 0.008f, 100f + wz * 0.008f);
                 float dryW = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 90f) / 120f)) * (0.5f + 0.5f * dryN) + Mathf.Clamp01((dryN - 0.7f) * 3f) * 0.6f;
                 dryW = Mathf.Clamp01(dryW);
+                // Steep ground exposes bare dirt/gravel instead of staying grassed over, like real terrain.
+                float slopeDeg = data.GetSteepness(x / (float)(ares - 1), y / (float)(ares - 1));
+                float slopeExposure = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((slopeDeg - 22f) / 20f));
+                d = Mathf.Max(d, slopeExposure * 0.75f);
+                g = Mathf.Max(g, slopeExposure * 0.35f);
+                // Muddy shore around the pond (the water plane itself covers the flooded centre).
+                d = Mathf.Max(d, Mathf.Clamp01(VenueBuilder.Pond(wx, wz) * 1.5f) * 0.5f);
                 float veg = (1f - d) * (1f - g);
                 alpha[y, x, 0] = veg * (1f - dryW);
                 alpha[y, x, 3] = veg * dryW;
@@ -310,9 +356,11 @@ public static class SceneBuilder
             usePrototypeMesh = false,
             minWidth = 0.3f, maxWidth = 0.55f,
             minHeight = 0.18f, maxHeight = 0.36f,
-            healthyColor = new Color(0.28f, 0.4f, 0.17f),
-            dryColor = new Color(0.4f, 0.4f, 0.21f),
-            noiseSpread = 0.15f,
+            healthyColor = new Color(0.22f, 0.38f, 0.13f),
+            dryColor = new Color(0.46f, 0.42f, 0.2f),
+            // Wider colour spread and a coarser noise scale than the default so grass patches read
+            // as natural mottled variation instead of a uniform stamped carpet from typical altitude.
+            noiseSpread = 0.55f,
             density = 1f,
         };
         data.detailPrototypes = new[] { proto };
@@ -326,7 +374,7 @@ public static class SceneBuilder
                 float wz = (y / (float)(dres - 1) - 0.5f) * TerrainSize;
                 float r = Mathf.Sqrt(wx * wx + wz * wz);
                 if (r > 320f) { map[y, x] = 0; continue; }
-                float track = Mathf.Max(GravelTrack(wx, wz), PitApron(wx, wz));
+                float track = Mathf.Max(Mathf.Max(PitApron(wx, wz), VenueBuilder.Gravel(wx, wz)), VenueBuilder.Dirt(wx, wz));
                 float patch = Mathf.PerlinNoise(500f + wx * 0.05f, 800f + wz * 0.05f);
                 float dens = 2.8f + patch * 2.4f;
                 if (r > 200f) dens *= 0.5f;
@@ -351,17 +399,28 @@ public static class SceneBuilder
         return terrain;
     }
 
-    /// <summary>1 inside the gravel race track (oval around the gates plus the taxiway from the pit), 0 outside, soft edge.</summary>
-    static float GravelTrack(float x, float z)
+    /// <summary>Simple thermal-erosion relaxation: wherever a cell is more than `talus` above its
+    /// lowest 4-neighbour, carry a `rate` fraction of the excess downhill. Cheap and in-place -
+    /// good enough to turn a pure-Perlin heightfield into something with ridgelines and drainage.</summary>
+    static void ThermalErode(float[,] h, int res, int iterations, float talus, float rate)
     {
-        // oval centred at (0, 22), radii 16 x 10 (matches the gate loop)
-        float ex = x / 16f, ez = (z - 22f) / 10f;
-        float e = Mathf.Sqrt(ex * ex + ez * ez);
-        float distOval = Mathf.Abs(e - 1f) * 12f;                 // ~metres from the oval line
-        float oval = 1f - Mathf.Clamp01((distOval - 1.4f) / 1.2f);
-        // taxiway from pit to the near gate
-        float taxi = (z > 3f && z < 13f) ? 1f - Mathf.Clamp01((Mathf.Abs(x) - 1.2f) / 1.0f) : 0f;
-        return Mathf.Max(oval, taxi);
+        for (int it = 0; it < iterations; it++)
+            for (int y = 1; y < res - 1; y++)
+                for (int x = 1; x < res - 1; x++)
+                {
+                    float hc = h[y, x];
+                    int bx = x, by = y;
+                    float lowest = hc;
+                    if (h[y, x - 1] < lowest) { lowest = h[y, x - 1]; bx = x - 1; by = y; }
+                    if (h[y, x + 1] < lowest) { lowest = h[y, x + 1]; bx = x + 1; by = y; }
+                    if (h[y - 1, x] < lowest) { lowest = h[y - 1, x]; bx = x; by = y - 1; }
+                    if (h[y + 1, x] < lowest) { lowest = h[y + 1, x]; bx = x; by = y + 1; }
+                    float diff = hc - lowest;
+                    if (diff <= talus) continue;
+                    float move = (diff - talus) * rate;
+                    h[y, x] -= move;
+                    h[by, bx] += move;
+                }
     }
 
     static float PitApron(float x, float z)
@@ -383,7 +442,7 @@ public static class SceneBuilder
         }
         layer.diffuseTexture = diffuseOverride != null ? diffuseOverride : GeneratedAssets.LoadExternal($"{asset}_Diffuse.jpg");
         layer.normalMapTexture = GeneratedAssets.LoadExternal($"{asset}_nor_gl.jpg");
-        layer.normalScale = 1f;
+        layer.normalScale = 1.25f;
         layer.tileSize = new Vector2(tile, tile);
         layer.smoothness = 0.08f;
         layer.metallic = 0f;
@@ -391,7 +450,7 @@ public static class SceneBuilder
         return layer;
     }
 
-    static float GroundHeight(Terrain t, float x, float z)
+    public static float GroundHeight(Terrain t, float x, float z)
     {
         return t.SampleHeight(new Vector3(x, 0f, z)) + t.transform.position.y;
     }
@@ -406,8 +465,8 @@ public static class SceneBuilder
         var paint = Mat("PaintWhite", new Color(0.9f, 0.9f, 0.88f), glossiness: 0.3f);
         var steel = Mat("Steel", new Color(0.55f, 0.56f, 0.58f), glossiness: 0.45f, metallic: 0.8f);
         var netMat = Mat("SafetyNet", new Color(0.05f, 0.05f, 0.05f, 0.4f), transparent: true);
-        var wall = Mat("Wall", new Color(0.62f, 0.58f, 0.52f), glossiness: 0.08f);
-        var roof = Mat("Roof", new Color(0.25f, 0.22f, 0.22f), glossiness: 0.15f);
+        var wall = GeneratedAssets.WeatheredConcrete("Wall", new Color(0.66f, 0.61f, 0.54f), 1.5f, glossiness: 0.08f, seed: 8); // rendered-plaster farm walls
+        var roof = GeneratedAssets.CorrugatedMetal("Roof", new Color(0.38f, 0.34f, 0.32f), 8f, glossiness: 0.2f, metallic: 0.05f);
 
         // Pit: asphalt pad (PBR, 1 texture repeat per 4 m) with a painted start circle
         var pitMesh = GeneratedAssets.SaveMesh(MeshBuilder.Box(new Vector3(24f, 0.1f, 18f), "PitAsphalt", 0.25f), "PitAsphalt");
@@ -436,6 +495,7 @@ public static class SceneBuilder
         net.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
 
         BuildTrees(env, terrain);
+        BuildPond(env, terrain);
 
         var rng = new System.Random(1234);
         float Rand(float lo, float hi) => lo + (float)rng.NextDouble() * (hi - lo);
@@ -451,6 +511,7 @@ public static class SceneBuilder
             float ang = Rand(0f, Mathf.PI * 2f);
             float r = Rand(80f, 260f);
             float x = Mathf.Cos(ang) * r, z = Mathf.Sin(ang) * r;
+            if (VenueBuilder.Keepout(x, z, 16f)) continue;
             var size = new Vector3(Rand(8f, 18f), Rand(4f, 8f), Rand(8f, 16f));
             float y = GroundHeight(terrain, x, z);
             var b = new GameObject($"Building {i}").transform;
@@ -491,11 +552,11 @@ public static class SceneBuilder
         bale.mainTextureScale = new Vector2(2f, 2f);
         for (int i = 0; i < 6; i++)
         {
-            float x = Rand(-30f, 30f), z = Rand(28f, 60f);
+            float x = Rand(-30f, 30f), z = Rand(24f, 56f);
             var hb = Primitive(PrimitiveType.Cylinder, $"Hay bale {i}", env, new Vector3(x, 0.75f, z), new Vector3(1.5f, 0.6f, 1.5f), bale);
             hb.transform.rotation = Quaternion.Euler(0f, Rand(0f, 360f), 90f);
         }
-        var container = Primitive(PrimitiveType.Cube, "Container", env, new Vector3(-34f, 1.3f, 38f), new Vector3(2.4f, 2.6f, 12f), Mat("Container", new Color(0.12f, 0.3f, 0.5f), glossiness: 0.35f, metallic: 0.4f));
+        var container = Primitive(PrimitiveType.Cube, "Container", env, new Vector3(-34f, 1.3f, 38f), new Vector3(2.4f, 2.6f, 12f), GeneratedAssets.CorrugatedMetal("Container", new Color(0.12f, 0.3f, 0.5f), 5f));
         container.transform.rotation = Quaternion.Euler(0f, 20f, 0f);
     }
 
@@ -537,6 +598,7 @@ public static class SceneBuilder
             var (mesh, height, crown) = variants[variant];
             float y = GroundHeight(terrain, x, z) - 0.1f;
             var go = new GameObject(bush ? "Bush" : "Tree");
+            go.isStatic = true;
             go.transform.SetParent(trees);
             go.transform.position = new Vector3(x, y, z);
             go.transform.rotation = Quaternion.Euler(0f, Rand(0f, 360f), 0f);
@@ -561,7 +623,7 @@ public static class SceneBuilder
             float ang = Rand(0f, Mathf.PI * 2f);
             float r = Rand(40f, 300f);
             float x = Mathf.Cos(ang) * r, z = Mathf.Sin(ang) * r;
-            if (z > -5f && z < 50f && Mathf.Abs(x) < 34f) continue;
+            if (VenueBuilder.Keepout(x, z, 6f)) continue;
             float n = Mathf.PerlinNoise(x * 0.01f + 50f, z * 0.01f + 50f);
             if (rng.NextDouble() > n * 1.6f) continue;   // clumps
             Place(rng.Next(0, 4), x, z, Rand(0.85f, 1.2f));
@@ -580,9 +642,27 @@ public static class SceneBuilder
             float ang = Rand(0f, Mathf.PI * 2f);
             float r = Rand(30f, 120f);
             float x = Mathf.Cos(ang) * r, z = Mathf.Sin(ang) * r;
-            if (z > -5f && z < 45f && Mathf.Abs(x) < 30f) continue;
+            if (VenueBuilder.Keepout(x, z, 3f)) continue;
             Place(4, x, z, Rand(0.7f, 1.3f), true);
         }
+    }
+
+    /// <summary>A small farm pond nestled in the hills - a reflective plane sitting in the basin
+    /// carved into the heightmap by BuildTerrain (VenueBuilder.Pond).</summary>
+    static void BuildPond(Transform env, Terrain terrain)
+    {
+        var water = Mat("Water", new Color(0.08f, 0.2f, 0.26f), glossiness: 0.92f, metallic: 0.05f);
+        float rim = GroundHeight(terrain, VenueBuilder.PondCenter.x + VenueBuilder.PondRadius + 4f, VenueBuilder.PondCenter.y);
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        go.name = "Pond";
+        Object.DestroyImmediate(go.GetComponent<Collider>());
+        go.transform.SetParent(env, false);
+        go.transform.position = new Vector3(VenueBuilder.PondCenter.x, rim - 0.6f, VenueBuilder.PondCenter.y);
+        go.transform.localScale = new Vector3(VenueBuilder.PondRadius * 1.6f, 0.02f, VenueBuilder.PondRadius * 1.6f);
+        var mr = go.GetComponent<Renderer>();
+        mr.sharedMaterial = water;
+        mr.shadowCastingMode = ShadowCastingMode.Off;
+        go.isStatic = true;
     }
 
     // ------------------------------------------------------------------ drone
@@ -617,6 +697,9 @@ public static class SceneBuilder
         autopilot.fc = fc;
         autopilot.input = go.GetComponent<PilotInput>();
         go.AddComponent<PayloadRack>();
+        var tricks = go.AddComponent<TrickDetector>();
+        tricks.drone = physics;
+        tricks.fc = fc;
 
         var model = DroneModelBuilder.Build(go.transform, physics, Accent);
         physics.propellers = model.props;
@@ -629,7 +712,14 @@ public static class SceneBuilder
         motorAudio.transform.SetParent(go.transform, false);
         motorAudio.AddComponent<AudioSource>();
         motorAudio.AddComponent<DroneAudio>().drone = physics;
-        var impact = motorAudio.AddComponent<ImpactAudio>();
+
+        // Own AudioSource - sharing one with DroneAudio let each component's Awake() silently
+        // overwrite the other's min/maxDistance, and DroneAudio.Update() rewrites source.volume
+        // every frame, which would otherwise compound with ImpactAudio's own volume on every hit.
+        var impactAudio = new GameObject("Impact audio");
+        impactAudio.transform.SetParent(go.transform, false);
+        impactAudio.AddComponent<AudioSource>();
+        var impact = impactAudio.AddComponent<ImpactAudio>();
         impact.crashDetector = crash;
         impact.flightController = fc;
 
@@ -644,6 +734,10 @@ public static class SceneBuilder
         var fx = fpv.AddComponent<FpvCameraEffects>();
         fx.shader = Shader.Find("DroneTrainer/FpvAnalog");
         fx.drone = physics;
+        // The shared PPv2 profile already darkens every camera's corners (Vignette, ~0.18); the
+        // shader's own fisheye-shaped vignette stacks on top of that for the FPV camera only, so
+        // tone it down from its old solo-use default to avoid double-darkening its corners.
+        fx.vignette = 0.15f;
         fpv.AddComponent<AudioSource>();
         var windAudio = fpv.AddComponent<WindAudio>();
         windAudio.drone = physics;
@@ -678,7 +772,19 @@ public static class SceneBuilder
 
         var fpvCam = drone.GetComponentInChildren<Camera>();
         fpvCam.GetComponent<FpvCameraEffects>().pilot = los.transform;
-        return new[] { chaseCam, losCam, fpvCam };
+
+        // Cinematic camera behind the menus (index 3; not part of the in-flight camera cycle)
+        var show = new GameObject("Showcase Camera");
+        show.transform.SetParent(camsRoot);
+        show.transform.position = new Vector3(10f, 5f, -10f);
+        var showCam = show.AddComponent<Camera>();
+        showCam.fieldOfView = 55f;
+        showCam.farClipPlane = 1500f;
+        showCam.allowHDR = true;
+        showCam.enabled = false;
+        show.AddComponent<AudioListener>().enabled = false;
+        show.AddComponent<ShowcaseCamera>();
+        return new[] { chaseCam, losCam, fpvCam, showCam };
     }
 
     // ------------------------------------------------------------------ post-processing
@@ -701,17 +807,17 @@ public static class SceneBuilder
 
         var ao = Add<AmbientOcclusion>();
         ao.mode.Override(AmbientOcclusionMode.MultiScaleVolumetricObscurance);
-        ao.intensity.Override(0.55f);
-        ao.thicknessModifier.Override(1f);
+        ao.intensity.Override(0.7f);
+        ao.thicknessModifier.Override(1.3f);
         var bloom = Add<Bloom>();
-        bloom.intensity.Override(1.0f);
-        bloom.threshold.Override(1.05f);
+        bloom.intensity.Override(1.3f);
+        bloom.threshold.Override(0.9f);
         bloom.softKnee.Override(0.6f);
         var cg = Add<ColorGrading>();
         cg.tonemapper.Override(Tonemapper.ACES);
         cg.postExposure.Override(0.1f);
-        cg.saturation.Override(8f);
-        cg.contrast.Override(10f);
+        cg.saturation.Override(12f);
+        cg.contrast.Override(18f);
         cg.temperature.Override(4f);
         var mb = Add<MotionBlur>();
         mb.shutterAngle.Override(200f);
@@ -719,6 +825,14 @@ public static class SceneBuilder
         var vig = Add<Vignette>();
         vig.intensity.Override(0.18f);
         vig.smoothness.Override(0.5f);
+        // Cheap cinematic-camera finish for chase/LOS/showcase (the FPV feed already has its own,
+        // stronger analog-video look via FpvAnalog.shader, so keep these subtle here).
+        var grain = Add<Grain>();
+        grain.intensity.Override(0.18f);
+        grain.size.Override(1.3f);
+        grain.lumContrib.Override(0.8f);
+        var ca = Add<ChromaticAberration>();
+        ca.intensity.Override(0.07f); // kept low: edge fringing hurts the precise visual feedback a flight trainer needs
         EditorUtility.SetDirty(profile);
 
         var volumeGo = new GameObject("Post-process volume");
@@ -758,10 +872,16 @@ public static class SceneBuilder
         public Balloon[] balloons;
         public Transform[] dropTargets;
         public DemoBlock[] demoBlocks;
+        public DemoBlock[] targetCars;
+        public Transform pylon;
+        public Transform spawnRace, spawnPark, spawnYard, focusRace, focusPark, focusYard;
     }
 
-    static DemoBlock[] BuildDemolition(Transform root, Terrain terrain)
+    static readonly List<DemoBlock> builtTargetCars = new List<DemoBlock>();
+
+    static DemoBlock[] BuildDemolition(Transform root, Terrain terrain, float ox, float oz)
     {
+        builtTargetCars.Clear();
         var parent = new GameObject("Demolition").transform;
         parent.SetParent(root);
         var crate = Mat("Crate", new Color(0.62f, 0.44f, 0.22f), glossiness: 0.2f);
@@ -819,16 +939,16 @@ public static class SceneBuilder
                 }
         }
 
-        CrateTower(-24f, 36f, 3, 5);
-        CrateTower(24f, 34f, 2, 6);
-        BarrelPyramid(0f, 52f);
-        Wall(12f, 46f, 20f);
-        Wall(-10f, 48f, -35f);
+        CrateTower(ox - 24f, oz + 36f, 3, 5);
+        CrateTower(ox + 24f, oz + 34f, 2, 6);
+        BarrelPyramid(ox, oz + 52f);
+        Wall(ox + 12f, oz + 46f, 20f);
+        Wall(ox - 10f, oz + 48f, -35f);
 
         // Target cars: parked in a real asphalt lot with painted bays, each marked with a
         // spinning orange diamond - the exact, unmistakable targets, easy to find and reach
         // right after take-off (the lot sits in the open centre of the gate loop).
-        const float lotCenterX = 0f, lotCenterZ = 22f;
+        float lotCenterX = ox, lotCenterZ = oz + 22f;
         BuildParkingLot(parent, terrain, lotCenterX, lotCenterZ);
         var carColors = new[] { new Color(0.82f, 0.07f, 0.05f), new Color(0.08f, 0.32f, 0.82f), new Color(0.92f, 0.78f, 0.05f) };
         const int carWeight = 8; // each target car counts as several crates towards the demolition score
@@ -837,8 +957,9 @@ public static class SceneBuilder
             float x = lotCenterX + (i - 1) * 4f;
             float z = lotCenterZ;
             float g = GroundHeight(terrain, x, z);
-            var carBlock = CarBuilder.Build(parent, new Vector3(x, g, z), 180f, carColors[i], "Target car");
+            var carBlock = CarBuilder.Build(parent, new Vector3(x, g, z), 180f, carColors[i], $"Target car {i + 1}");
             CarBuilder.AddTargetMarker(carBlock.transform);
+            builtTargetCars.Add(carBlock);
             for (int k = 0; k < carWeight; k++) list.Add(carBlock);
         }
 
@@ -867,7 +988,7 @@ public static class SceneBuilder
             Primitive(PrimitiveType.Cube, "Bound line", parent, new Vector3(centerX + x, g + 0.025f, centerZ), new Vector3(0.08f, 0.002f, lotDepth - 0.6f), paint, collider: false);
     }
 
-    static Balloon[] BuildBalloons(Transform root, Terrain terrain)
+    static Balloon[] BuildBalloons(Transform root, Terrain terrain, float ox, float oz)
     {
         var parent = new GameObject("Balloons").transform;
         parent.SetParent(root);
@@ -879,8 +1000,8 @@ public static class SceneBuilder
         var list = new List<Balloon>();
         for (int i = 0; i < 14; i++)
         {
-            float x = -26f + (float)rng.NextDouble() * 52f;
-            float z = 6f + (float)rng.NextDouble() * 40f;
+            float x = ox - 26f + (float)rng.NextDouble() * 52f;
+            float z = oz + 10f + (float)rng.NextDouble() * 34f;
             float h = 1.5f + (float)rng.NextDouble() * 9f;
             float ground = GroundHeight(terrain, x, z);
             var go = new GameObject($"Balloon {i + 1}");
@@ -903,13 +1024,13 @@ public static class SceneBuilder
         return list.ToArray();
     }
 
-    static Transform[] BuildDropTargets(Transform root, Terrain terrain)
+    static Transform[] BuildDropTargets(Transform root, Terrain terrain, float ox, float oz)
     {
         var parent = new GameObject("Drop targets").transform;
         parent.SetParent(root);
         var white = Mat("TargetWhite", new Color(0.95f, 0.95f, 0.92f), glossiness: 0.15f);
         var red = Mat("TargetRed", new Color(0.9f, 0.12f, 0.08f), glossiness: 0.15f);
-        var positions = new[] { new Vector3(-12f, 0f, 30f), new Vector3(12f, 0f, 27f), new Vector3(0f, 0f, 42f) };
+        var positions = new[] { new Vector3(ox - 16f, 0f, oz + 28f), new Vector3(ox + 14f, 0f, oz + 26f), new Vector3(ox - 20f, 0f, oz + 46f) };
         var list = new List<Transform>();
         foreach (var p in positions)
         {
@@ -945,27 +1066,38 @@ public static class SceneBuilder
         Primitive(PrimitiveType.Cube, "H3", pad.transform, new Vector3(0f, 1f, 0f), new Vector3(0.36f, 1.2f, 0.08f), paint, collider: false);
         c.pad = pad.transform;
 
-        var gatesRoot = new GameObject("Gates").transform;
-        gatesRoot.SetParent(root);
-        const int count = 6;
-        const float ovalX = 16f, ovalZ = 10f, ovalCenterZ = 22f;
-        var gates = new List<Gate>();
-        for (int i = 0; i < count; i++)
-        {
-            float t = Mathf.PI + (i / (float)count) * Mathf.PI * 2f;
-            var pos = new Vector3(Mathf.Sin(t) * ovalX, 0f, ovalCenterZ + Mathf.Cos(t) * ovalZ);
-            pos.y = GroundHeight(terrain, pos.x, pos.z);
-            var tangent = new Vector3(Mathf.Cos(t) * ovalX, 0f, -Mathf.Sin(t) * ovalZ).normalized;
-            gates.Add(BuildGate(gatesRoot, i + 1, pos, tangent));
-        }
-        c.gates = gates.ToArray();
-        c.balloons = BuildBalloons(root, terrain);
-        c.dropTargets = BuildDropTargets(root, terrain);
-        c.demoBlocks = BuildDemolition(root, terrain);
+        // Venues: race track (east), freestyle park (west), demolition yard (north)
+        var race = VenueBuilder.BuildRaceTrack(root, terrain);
+        c.gates = race.gates;
+        c.spawnRace = race.spawn;
+        c.focusRace = race.focus;
+        var park = VenueBuilder.BuildFreestylePark(root, terrain);
+        c.spawnPark = park.spawn;
+        c.focusPark = park.focus;
+        var yard = VenueBuilder.BuildDemolitionYard(root, terrain);
+        c.spawnYard = yard.spawn;
+        c.focusYard = yard.focus;
+        float yx = VenueBuilder.Yard.x, yz = VenueBuilder.Yard.y - 32f; // old props were laid out for z = 6..52
+        c.balloons = BuildBalloons(root, terrain, yx, yz);
+        c.dropTargets = BuildDropTargets(root, terrain, yx, yz);
+        c.demoBlocks = BuildDemolition(root, terrain, yx, yz);
+        c.targetCars = builtTargetCars.ToArray();
+
+        // Orbit pylon: a tall striped pole off to the side of the pit.
+        var pylon = new GameObject("Pylon").transform;
+        pylon.SetParent(root);
+        pylon.position = new Vector3(18f, GroundHeight(terrain, 18f, 4f), 4f);
+        var stripeA = Mat("PylonRed", new Color(0.9f, 0.1f, 0.05f), glossiness: 0.3f);
+        var stripeB = Mat("PylonWhite", new Color(0.95f, 0.95f, 0.92f), glossiness: 0.3f);
+        for (int i = 0; i < 8; i++)
+            Primitive(PrimitiveType.Cylinder, "Stripe", pylon, new Vector3(0f, 0.5f + i * 1f, 0f), new Vector3(0.3f, 0.5f, 0.3f), i % 2 == 0 ? stripeA : stripeB);
+        Primitive(PrimitiveType.Sphere, "Top", pylon, new Vector3(0f, 8.4f, 0f), Vector3.one * 0.6f, stripeA, collider: false);
+        pylon.gameObject.SetActive(false);
+        c.pylon = pylon;
         return c;
     }
 
-    static Gate BuildGate(Transform parent, int number, Vector3 groundPos, Vector3 forward)
+    public static Gate BuildGate(Transform parent, int number, Vector3 groundPos, Vector3 forward)
     {
         const float width = 2.4f, height = 2.4f, bottom = 0.7f, tubeR = 0.05f;
         var tube = Mat("GateTube", new Color(0.88f, 0.88f, 0.9f), glossiness: 0.45f);
@@ -1016,7 +1148,7 @@ public static class SceneBuilder
         trainer.AddComponent<Wind>();
 
         var switcher = trainer.AddComponent<CameraSwitcher>();
-        switcher.cameras = cams;
+        switcher.cameras = new[] { cams[0], cams[1], cams[2] };
         switcher.names = new[] { "Chase", "Line of sight", "FPV" };
         switcher.input = input;
 
@@ -1027,83 +1159,102 @@ public static class SceneBuilder
         manager.flightController = fc;
         manager.crashDetector = crash;
         manager.input = input;
+        manager.autoStartFirstLesson = false; // the main menu starts drills
 
-        var l1 = new GameObject("1 Hover").AddComponent<HoverBoxLesson>();
-        l1.transform.SetParent(lessonsRoot.transform);
-        l1.title = "Hover in the box";
-        l1.instructions = "Arm, lift off and hold the drone inside the yellow box for 10 seconds without leaving it. A 5\" quad hovers at ~35% throttle - small stick inputs!";
-        l1.recommendedMode = FlightMode.Angle;
-        l1.zone = course.hoverZone;
-        l1.parTime = 30f;
+        // ---- Curriculum: consecutive drills with the same discipline form a discipline ----
+        T Drill<T>(string name, string discipline, string title, string text, FlightMode mode, float par) where T : Lesson
+        {
+            var l = new GameObject(name).AddComponent<T>();
+            l.transform.SetParent(lessonsRoot.transform);
+            l.discipline = discipline;
+            l.title = title;
+            l.instructions = text;
+            l.recommendedMode = mode;
+            l.parTime = par;
+            return l;
+        }
 
-        var l2 = new GameObject("2 Gates").AddComponent<GateCourseLesson>();
-        l2.transform.SetParent(lessonsRoot.transform);
-        l2.title = "Gate course";
-        l2.instructions = "Fly through the gates in order. The next gate glows green. Use yaw to turn and pitch to move forward.";
-        l2.recommendedMode = FlightMode.Angle;
-        l2.gates = course.gates;
-        l2.parTime = 60f;
+        // Basics
+        var b1 = Drill<HoverBoxLesson>("B1 Hover", "Basics", "Hover in the box",
+            "Arm, lift off and hold the drone inside the yellow box for 10 seconds without leaving it. A 5\" quad hovers at ~35% throttle - small stick inputs!", FlightMode.Angle, 30f);
+        b1.zone = course.hoverZone;
+        var b2 = Drill<LandingLesson>("B2 Landing", "Basics", "Precision landing",
+            "Climb above 3 m, then land on the orange H pad softly (under 2 m/s) and stay still for 2 seconds. Hard landings break props!", FlightMode.Angle, 40f);
+        b2.pad = course.pad;
+        b2.padRadius = 1.2f;
+        var b3 = Drill<OrbitLesson>("B3 Orbit", "Basics", "Orbit the pylon",
+            "Fly 2 full circles around the red-and-white pylon, staying 3-8 m from it and above 1 m. Yaw to keep the nose on the pylon while rolling around it.", FlightMode.Angle, 60f);
+        b3.pylon = course.pylon;
+        b3.laps = 2f;
 
-        var l3 = new GameObject("3 Landing").AddComponent<LandingLesson>();
-        l3.transform.SetParent(lessonsRoot.transform);
-        l3.title = "Precision landing";
-        l3.instructions = "Climb above 3 m, then land on the orange H pad softly (under 2 m/s) and stay still for 2 seconds.";
-        l3.recommendedMode = FlightMode.Angle;
-        l3.pad = course.pad;
-        l3.padRadius = 1.2f;
-        l3.parTime = 40f;
+        // Racing
+        var r1 = Drill<GateCourseLesson>("R1 Gates", "Racing", "Gate course",
+            "Fly through the gates in order. The next gate glows green. Use yaw to turn and pitch to move forward.", FlightMode.Angle, 60f);
+        r1.gates = course.gates;
+        var r2 = Drill<GateCourseLesson>("R2 Acro gates", "Racing", "Gates in ACRO",
+            "Same course in ACRO (press M). No self-levelling: you must actively level the drone. Two laps.", FlightMode.Acro, 120f);
+        r2.gates = course.gates;
+        r2.laps = 2;
+        var r3 = Drill<GateCourseLesson>("R3 Race", "Racing", "Race - 3 laps",
+            "Wait for the 3-2-1-GO countdown (crossing a gate early is a false start), then three timed laps. Your best lap is remembered.", FlightMode.Acro, 150f);
+        r3.gates = course.gates;
+        r3.laps = 3;
+        r3.countdownSeconds = 3f;
+        r3.bestLapKey = "race.bestlap";
+        var r4 = Drill<GateCourseLesson>("R4 Time trial", "Racing", "Time trial - beat 22 s",
+            "Two laps after the countdown. Full marks only if your best lap is under 22 seconds - carry speed through the gates, brake with pitch, not throttle.", FlightMode.Acro, 90f);
+        r4.gates = course.gates;
+        r4.laps = 2;
+        r4.countdownSeconds = 3f;
+        r4.targetLapTime = 22f;
+        r4.bestLapKey = "race.bestlap";
 
-        var l4 = new GameObject("4 Acro gates").AddComponent<GateCourseLesson>();
-        l4.transform.SetParent(lessonsRoot.transform);
-        l4.title = "Gate course in ACRO";
-        l4.instructions = "Same course, but switch to ACRO (press M). No self-levelling: you must actively level the drone. Two laps.";
-        l4.recommendedMode = FlightMode.Acro;
-        l4.gates = course.gates;
-        l4.laps = 2;
-        l4.parTime = 120f;
+        // Freestyle
+        var f1 = Drill<TrickLesson>("F1 Rolls", "Freestyle", "Rolls x3",
+            "Switch to ACRO (M), climb above 6 m, then do three full rolls (roll stick all the way, hold, centre when level). Catch each one before it drops.", FlightMode.Acro, 60f);
+        f1.rollsRequired = 3;
+        var f2 = Drill<TrickLesson>("F2 Flips", "Freestyle", "Flips x3",
+            "ACRO, above 6 m: three full flips (pitch stick fully forward or back, hold, centre when level). Punch the throttle just before you start.", FlightMode.Acro, 60f);
+        f2.flipsRequired = 3;
+        var f3 = Drill<TrickLesson>("F3 Power loops", "Freestyle", "Power loops x2",
+            "ACRO: dive to gain speed, pull up hard and keep pulling over the top so you gain 2.5 m or more at the apex, then complete the loop. Two of them.", FlightMode.Acro, 90f);
+        f3.loopsRequired = 2;
 
-        var l5 = new GameObject("5 Balloon pop").AddComponent<BalloonPopLesson>();
-        l5.transform.SetParent(lessonsRoot.transform);
-        l5.title = "Balloon pop";
-        l5.instructions = "14 balloons are tied around the field at different heights. Fly through every one of them - fastest time wins.";
-        l5.recommendedMode = FlightMode.Angle;
-        l5.balloons = course.balloons;
-        l5.parTime = 90f;
+        // Demolition (kamikaze game)
+        var d1 = Drill<BalloonPopLesson>("D1 Balloons", "Demolition", "Balloon pop",
+            "14 balloons are tied around the field at different heights. Fly through every one of them - fastest time wins.", FlightMode.Angle, 90f);
+        d1.balloons = course.balloons;
+        var d2 = Drill<WaterBalloonDropLesson>("D2 Drop", "Demolition", "Water-balloon drop",
+            "You carry 6 water balloons (they weigh you down). Fly over a bullseye and press F to release. The balloon keeps your speed and falls with drag, so lead the target. 10 / 5 / 2 points by ring.", FlightMode.Angle, 120f);
+        d2.targets = course.dropTargets;
+        var d3 = Drill<DemolitionLesson>("D3 Marked car", "Demolition", "Hit the marked car",
+            "Only the RED target car counts (leftmost bay, spinning marker). Fly into it. Hitting anything else wastes a drone. Fewer drones used = more stars.", FlightMode.Angle, 60f);
+        d3.blocks = course.demoBlocks;
+        d3.requiredTarget = course.targetCars.Length > 0 ? course.targetCars[0] : null;
+        d3.drones = 3;
+        var d4 = Drill<DemolitionLesson>("D4 Speed hit", "Demolition", "Speed hit - 12 m/s",
+            "Hit the BLUE car (middle bay) at 12 m/s or faster. Build speed on a long straight approach, stay low, and don't flare before impact.", FlightMode.Angle, 60f);
+        d4.blocks = course.demoBlocks;
+        d4.requiredTarget = course.targetCars.Length > 1 ? course.targetCars[1] : null;
+        d4.minImpactSpeed = 12f;
+        d4.drones = 3;
+        var d5 = Drill<DemolitionLesson>("D5 Demolition", "Demolition", "Kamikaze demolition",
+            "Cars, crate towers, barrel pyramids and walls. Demolish 60% of everything with 5 drones - pick targets where one blast topples the most.", FlightMode.Angle, 180f);
+        d5.blocks = course.demoBlocks;
+        d5.drones = 5;
+        d5.passPercent = 60;
 
-        var l6 = new GameObject("6 Water balloon drop").AddComponent<WaterBalloonDropLesson>();
-        l6.transform.SetParent(lessonsRoot.transform);
-        l6.title = "Water-balloon drop";
-        l6.instructions = "You carry 6 water balloons (they weigh you down). Fly over a bullseye and press F to release. The balloon keeps your speed and falls with drag, so lead the target. 10 / 5 / 2 points by ring.";
-        l6.recommendedMode = FlightMode.Angle;
-        l6.targets = course.dropTargets;
-        l6.parTime = 120f;
+        // Agent
+        var a1 = Drill<AutopilotAgentLesson>("A1 Agent", "Agent", "Autopilot agent",
+            "The drone flies the mission by itself: take-off, the gate loop at 4 m, return and land. Watch from any camera (C). Move the sticks to take over; Backspace restarts the agent.", FlightMode.Angle, 120f);
+        a1.gates = course.gates;
+        a1.altitude = 4f;
 
-        var l7 = new GameObject("7 Race").AddComponent<GateCourseLesson>();
-        l7.transform.SetParent(lessonsRoot.transform);
-        l7.title = "Race - 3 laps";
-        l7.instructions = "Three timed laps through the gate loop. Your best lap is remembered.";
-        l7.recommendedMode = FlightMode.Acro;
-        l7.gates = course.gates;
-        l7.laps = 3;
-        l7.bestLapKey = "race.bestlap";
-        l7.parTime = 150f;
-
-        var l8 = new GameObject("8 Autopilot agent").AddComponent<AutopilotAgentLesson>();
-        l8.transform.SetParent(lessonsRoot.transform);
-        l8.title = "Autopilot agent";
-        l8.instructions = "The drone flies the mission by itself: take-off, the gate loop at 4 m, return and land. Watch from any camera (C). Move the sticks to take over; Backspace restarts the agent.";
-        l8.recommendedMode = FlightMode.Angle;
-        l8.gates = course.gates;
-        l8.altitude = 4f;
-
-        var l9 = new GameObject("9 Kamikaze demolition").AddComponent<DemolitionLesson>();
-        l9.transform.SetParent(lessonsRoot.transform);
-        l9.title = "Kamikaze demolition";
-        l9.instructions = "Three target cars (marked with a spinning orange diamond) are parked inside the gate loop - your exact targets. Crate towers, barrel pyramids and walls wait further out. Fly into anything and it goes off like a firework: the car's wheels pop off and everything blasts apart. You have 5 drones - knock down as much as you can.";
-        l9.recommendedMode = FlightMode.Angle;
-        l9.blocks = course.demoBlocks;
-        l9.drones = 5;
-
+        // Venues: each discipline starts at its own spawn point
+        foreach (var l in new Lesson[] { r1, r2, r3, r4, a1 }) { l.spawn = course.spawnRace; l.venue = "Race track"; }
+        foreach (var l in new Lesson[] { f1, f2, f3 }) { l.spawn = course.spawnPark; l.venue = "Freestyle park"; }
+        foreach (var l in new Lesson[] { d1, d2, d3, d4, d5 }) { l.spawn = course.spawnYard; l.venue = "Demolition yard"; }
+        manager.pilotCamera = cams[1].transform;
         var selfTest = trainer.AddComponent<AutoPilotSelfTest>();
         selfTest.drone = physics;
         selfTest.flightController = fc;
@@ -1116,6 +1267,36 @@ public static class SceneBuilder
         osd.lessons = manager;
         osd.cameras = switcher;
 
+        // ---- Front end: title, discipline/drill selection, pause, results ----
+        var showcase = cams[3].GetComponent<ShowcaseCamera>();
+        var shots = new List<ShowcaseCamera.Shot>();
+        shots.Add(new ShowcaseCamera.Shot { target = drone.transform, radius = 2.2f, height = 0.9f, degreesPerSecond = 9f, seconds = 10f, lookHeight = 0.15f });
+        if (course.focusRace != null) shots.Add(new ShowcaseCamera.Shot { target = course.focusRace, offset = new Vector3(0f, 0f, 14f), radius = 34f, height = 11f, degreesPerSecond = 5f, seconds = 12f, lookHeight = 2f });
+        if (course.focusPark != null) shots.Add(new ShowcaseCamera.Shot { target = course.focusPark, radius = 26f, height = 9f, degreesPerSecond = 6f, seconds = 11f, lookHeight = 4f });
+        if (course.focusYard != null) shots.Add(new ShowcaseCamera.Shot { target = course.focusYard, offset = new Vector3(0f, 0f, 26f), radius = 40f, height = 14f, degreesPerSecond = 5f, seconds = 12f, lookHeight = 2f });
+        if (course.gates != null && course.gates.Length > 0)
+        {
+            var mid = course.gates[course.gates.Length / 2].transform;
+            shots.Add(new ShowcaseCamera.Shot { target = mid, radius = 26f, height = 9f, degreesPerSecond = 5f, seconds = 12f, lookHeight = 1.5f });
+            shots.Add(new ShowcaseCamera.Shot { target = course.gates[0].transform, radius = 7f, height = 2.5f, degreesPerSecond = 8f, seconds = 9f, lookHeight = 1.8f });
+        }
+        if (course.targetCars != null && course.targetCars.Length > 0)
+            shots.Add(new ShowcaseCamera.Shot { target = course.targetCars[0].transform, radius = 9f, height = 3f, degreesPerSecond = 7f, seconds = 10f, lookHeight = 0.8f });
+        if (course.pylon != null)
+            shots.Add(new ShowcaseCamera.Shot { target = course.pylon, radius = 14f, height = 5f, degreesPerSecond = 6f, seconds = 9f, lookHeight = 2f });
+        showcase.shots = shots.ToArray();
+
+        var menu = trainer.AddComponent<MainMenu>();
+        menu.lessons = manager;
+        menu.cameras = switcher;
+        menu.showcaseCamera = cams[3];
+        menu.input = input;
+        menu.drone = physics;
+        menu.flightController = fc;
+        menu.crashDetector = crash;
+        menu.osd = osd;
+        osd.menu = menu;
+
         var remote = trainer.AddComponent<DevRemote>();
         remote.drone = physics;
         remote.flightController = fc;
@@ -1123,6 +1304,7 @@ public static class SceneBuilder
         remote.cameras = switcher;
         remote.lessons = manager;
         remote.osd = osd;
+        remote.menu = menu;
     }
 
     // ------------------------------------------------------------------ helpers

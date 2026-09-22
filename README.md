@@ -31,8 +31,8 @@ Standalone build: File → Build Profiles → Windows → Build (the scene is al
 | Reset (fresh pack)| R              | B                | button 3            |
 | Cycle camera      | C              | X                | button 4            |
 | Drop payload      | F              | RB / RT          |                     |
-| Pick scenario     | 1–9 (0 = free) |                  |                     |
-| Next / retry lesson | N / Backspace | D-pad → / ←     |                     |
+| Pick discipline   | 1–5 (0 = menu) |                  |                     |
+| Next drill / retry | N / Backspace |                  |                     |
 | Pause             | P / Esc        | Start            |                     |
 | **Settings**      | **Tab**        | Back/Select      |                     |
 | Axis debug panel  | F1             |                  |                     |
@@ -93,27 +93,50 @@ other), 3D with Doppler in line-of-sight view, airflow noise in FPV, impact thum
 External assets live in `Assets/External/PolyHaven` (CC0, see LICENSE.txt there); generated
 meshes/textures in `Assets/Generated` (rebuilt by the scene builder, safe to delete).
 
-## 4. Scenarios
+## 4. Training program
 
-Press a number key at any time (0 = free flight, the free-flight panel lists them):
+The app opens on a **title screen** over a cinematic camera of the field, then a
+**discipline picker** (six cards: five disciplines + free flight) and a **drill list** with a
+briefing, scoring rules and your best result per drill ([MainMenu.cs](Assets/Scripts/UI/MainMenu.cs)).
+Mouse, keyboard (arrows / WASD, Enter, Esc, 1-5, F) and gamepad (d-pad, A, B) all work.
+The UI is in **Uzbek (Latin) by default**; press **L** on the title screen (or use Settings) for
+English. Strings live in [Loc.cs](Assets/Scripts/UI/Loc.cs): a phrase table for menus and briefings, plus
+regex phrases for in-flight statuses that contain numbers. Unknown strings fall through in English.
+A discipline opens at your first drill without 3 stars. In flight **Esc** pauses (resume / retry /
+next drill / choose drill / main menu); every finished drill shows a **results card** with animated
+stars, the score counting up and "new personal best". Each drill starts in its suggested flight
+mode (change with M). Every drill is scored 0–100 and rated 0–3 stars; best stars, best score
+and attempts are saved between sessions and shown on the cards.
 
-| # | Scenario            | Mode  | Goal |
-|---|---------------------|-------|------|
-| 1 | Hover in the box    | Angle | Hold position inside the yellow 3×2×3 m box for 10 s |
-| 2 | Gate course         | Angle | 6 race gates in order (green = next) |
-| 3 | Precision landing   | Angle | Climb above 3 m, land on the H pad under 2 m/s, hold 2 s |
-| 4 | Gate course in Acro | Acro  | Same course, no self-levelling, 2 laps |
-| 5 | **Balloon pop**     | any   | 14 balloons on strings around the field at 1.5–11 m; fly through all of them, fastest time wins |
-| 6 | **Water-balloon drop** | any | Carry 6 water balloons (0.12 kg each — the quad really gets heavier), press **F** over a bullseye; the balloon keeps your velocity and falls with drag, 10 / 5 / 2 points by ring |
-| 7 | **Race – 3 laps**   | Acro  | Lap timer, last/best lap, record kept between sessions |
-| 8 | **Autopilot agent** | —     | The drone flies the mission itself (take-off, gate loop at 4 m, return, land, disarm). Move a stick to take over; Backspace hands it back |
-| 9 | **Kamikaze demolition** | any | Three exact target cars (modelled sedan: body, cabin, raked windshield/rear window, mirrors, door trim, licence plates, exhaust, alloy wheels with lug nuts, breakaway bumpers) parked in a real asphalt lot with painted bays inside the gate loop, each marked with a spinning orange diamond — plus crate towers, barrel pyramids and block walls further out. Fly into anything and the drone goes off like a firework: car windows shatter, wheels and bumpers pop off on breakable joints and tumble away independently, a scorch mark and drifting smoke are left on the ground, and nearby structures blast apart too (physics chain-reaction — hitting one car can topple its neighbour). 5 drones per run, score = % demolished (each target car counts for 8 points, worth more than a crate) |
+Each discipline has its own **venue** on the field ([VenueBuilder.cs](Assets/Editor/VenueBuilder.cs)); a drill
+spawns you (and the line-of-sight pilot) at its venue:
 
-Score = 100 − 15 per crash − 0.5 per second over par. Add scenarios by deriving from `Lesson`
-and placing the component under `Trainer/Lessons` (see `SceneBuilder.BuildTrainer`). The agent is
-[Autopilot.cs](Assets/Scripts/Training/Autopilot.cs): a position → velocity → tilt controller that
-drives the same stick interface as the pilot, with a wind integral and yaw-to-track.
+| Venue | Where | What is there |
+|---|---|---|
+| **Pit field** | origin | asphalt pad, tent, safety net, hover box, H landing pad, orbit pylon |
+| **Race track** | 80 m east | gravel oval with 8 gates, start/finish arch with chequered banner, tyre walls, cones, flags, grandstand, timing tower |
+| **Freestyle park** | 80 m west | concrete slab with a 3-floor skeleton building to dive through, a window wall, two ramps, a row of pillars, stacked containers |
+| **Demolition yard** | 90 m north | fenced dirt yard with hazard-striped gate, jersey barriers, two warehouses, container stacks, floodlight masts, the target-car lot, crate towers, barrel pyramid, block walls, balloons and drop bullseyes |
 
+| # | Discipline | Drills |
+|---|---|---|
+| 1 | **Basics** | Hover in the box · Precision landing · Orbit the pylon (2 laps, 3–8 m band, yaw-and-roll coordination) |
+| 2 | **Racing** | Gate course · Gates in Acro (2 laps) · Race – 3 laps with a 3-2-1-GO countdown (false-start detection) and lap record · Time trial – best lap under 22 s |
+| 3 | **Freestyle** | Rolls ×3 · Flips ×3 · Power loops ×2 — tricks are recognised from the quad's real body rates ([TrickDetector.cs](Assets/Scripts/Training/TrickDetector.cs)): a full 360° about the roll or pitch axis, and a flip that gains ≥ 2.5 m at the top counts as a power loop |
+| 4 | **Demolition** (kamikaze game) | Balloon pop · Water-balloon drop · Hit the marked car (only the red car counts; fewer drones = more stars) · Speed hit (hit the blue car at ≥ 12 m/s) · Kamikaze demolition (60 % of everything with 5 drones) |
+| 5 | **Agent** | Autopilot agent: the drone flies the loop itself; touch the sticks to take over |
+
+Add a drill by deriving from `Lesson` and adding it under `Trainer/Lessons` with a `discipline`
+name (see `SceneBuilder.BuildTrainer`); consecutive drills with the same name form a discipline.
+
+### Consequences (realism that trains)
+- **Prop strikes**: an impact between 2.4 and 5 m/s (clipping a gate, a hard landing) breaks one prop
+  instead of crashing — you lose 55–75 % of that motor's thrust, the quad yaws and wobbles, and you
+  have to land and press **R** for a new prop. Above 5 m/s it's a crash and auto-respawns.
+- **Prop wash / vortex ring state**: descending faster than ~2.5 m/s with little forward speed puts
+  the props in their own wake — thrust drops and the quad wobbles ("PROP WASH — add forward speed").
+  Real quads do exactly this; the fix is the same.
+- Battery sag, wind gusts and the payload's extra mass all still apply inside drills.
 ## 5. Tuning
 
 Everything is on the `Drone` and `Trainer` objects in the Inspector (live in Play mode) or in the
@@ -149,6 +172,8 @@ Assets/
     Cameras/ ChaseCamera, LineOfSightCamera, CameraSwitcher, FpvCameraEffects
     Training/ Lesson, HoverBoxLesson, GateCourseLesson, LandingLesson, Gate, LessonManager,
               AutoPilotSelfTest, DevRemote
+    UI/MainMenu.cs                                title, discipline/drill menus, pause, results card
     UI/Osd.cs                                     telemetry, lesson panel, sticks, settings
+    Cameras/ShowcaseCamera.cs                     cinematic orbits behind the menus
   Scenes/Training.unity, Materials/               generated
 ```

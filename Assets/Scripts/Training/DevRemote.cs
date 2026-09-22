@@ -21,6 +21,7 @@ public class DevRemote : MonoBehaviour
     public CameraSwitcher cameras;
     public LessonManager lessons;
     public Osd osd;
+    public MainMenu menu;
 
     string path;
     float next;
@@ -83,7 +84,18 @@ public class DevRemote : MonoBehaviour
             case "disarm": flightController.Disarm(); break;
             case "reset": crashDetector.Respawn(); break;
             case "mode": flightController.mode = (FlightMode)Enum.Parse(typeof(FlightMode), p[1], true); break;
-            case "lesson": lessons.StartLesson(int.Parse(p[1])); break;
+            case "lesson": if (menu != null) menu.PlayLesson(int.Parse(p[1])); else lessons.StartLesson(int.Parse(p[1])); break;
+            case "menu": if (menu != null) { if (p.Length > 1 && p[1] == "title") menu.OpenTitle(); else menu.OpenDrills(); } break;
+            case "nav": if (menu != null) menu.Nav(p[1]); break;
+            case "discipline": lessons.StartDiscipline(int.Parse(p[1])); break;
+            case "nextdrill": lessons.NextDrill(); break;
+            case "drills":
+            {
+                var sb = new System.Text.StringBuilder("[DevRemote] drills:");
+                for (int i = 0; i < lessons.Lessons.Length; i++) sb.Append($" [{i}] {lessons.Lessons[i].discipline}/{lessons.Lessons[i].title} best={lessons.Lessons[i].BestStars}");
+                Debug.Log(sb.ToString());
+                break;
+            }
             case "sticks":
                 PilotInput.OverrideRoll = F(p[1]);
                 PilotInput.OverridePitch = F(p[2]);

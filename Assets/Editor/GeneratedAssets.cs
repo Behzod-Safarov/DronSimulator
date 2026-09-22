@@ -88,7 +88,9 @@ public static class GeneratedAssets
     public static Texture2D MetallicSmoothFromRoughness(Texture2D rough, string name, float metallic = 0f, float smoothnessScale = 1f)
     {
         Ensure("Textures");
-        string path = $"{Dir}/Textures/{name}_MetallicSmooth.png";
+        // Keyed on metallic/smoothnessScale too: different callers (e.g. glossy asphalt vs matte
+        // concrete) share the same base Poly Haven asset but need distinct baked maps.
+        string path = $"{Dir}/Textures/{name}_m{metallic:0.00}_s{smoothnessScale:0.00}_MetallicSmooth.png";
         var existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         if (existing != null) return existing;
 
@@ -135,6 +137,36 @@ public static class GeneratedAssets
             mat.EnableKeyword("_METALLICGLOSSMAP");
             mat.SetFloat("_GlossMapScale", 1f);
         }
+        EditorUtility.SetDirty(mat);
+        return mat;
+    }
+
+    /// <summary>Standard-shader material with procedural corrugated-metal albedo+normal
+    /// (containers, warehouse walls, roll doors) over a tinted base.</summary>
+    public static Material CorrugatedMetal(string matName, Color baseColor, float tiling, float glossiness = 0.4f, float metallic = 0.1f)
+    {
+        var mat = SceneBuilder.Mat(matName, Color.white, glossiness: glossiness, metallic: metallic);
+        var (albedo, normal) = ProceduralTextures.CorrugatedMetal(baseColor);
+        mat.mainTexture = albedo;
+        mat.mainTextureScale = Vector2.one * tiling;
+        mat.SetTexture("_BumpMap", normal);
+        mat.EnableKeyword("_NORMALMAP");
+        mat.SetFloat("_BumpScale", 1.4f);
+        EditorUtility.SetDirty(mat);
+        return mat;
+    }
+
+    /// <summary>Standard-shader material with procedural weathered-concrete albedo+normal over a
+    /// tinted base (structural concrete: columns, slabs, grandstand tiers, barriers).</summary>
+    public static Material WeatheredConcrete(string matName, Color baseColor, float tiling, float glossiness = 0.12f, int seed = 3)
+    {
+        var mat = SceneBuilder.Mat(matName, Color.white, glossiness: glossiness, metallic: 0f);
+        var (albedo, normal) = ProceduralTextures.WeatheredConcrete(baseColor, seed: seed);
+        mat.mainTexture = albedo;
+        mat.mainTextureScale = Vector2.one * tiling;
+        mat.SetTexture("_BumpMap", normal);
+        mat.EnableKeyword("_NORMALMAP");
+        mat.SetFloat("_BumpScale", 1f);
         EditorUtility.SetDirty(mat);
         return mat;
     }

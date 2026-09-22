@@ -3,7 +3,9 @@ using UnityEngine;
 
 /// <summary>
 /// Fly through every gate in order. The next gate glows green. With laps > 1 it is a
-/// race: lap times are recorded and the best lap is remembered between sessions.
+/// race: an optional 3-2-1-GO countdown (passing a gate early is a false start), lap
+/// times are recorded, the best lap is remembered between sessions, and a target lap
+/// time turns it into a time trial that only scores well when you beat the target.
 /// </summary>
 public class GateCourseLesson : Lesson
 {
@@ -11,14 +13,40 @@ public class GateCourseLesson : Lesson
     public int laps = 1;
     [Tooltip("PlayerPrefs key for the best lap (leave empty to not record)")]
     public string bestLapKey = "";
+    [Tooltip("Seconds of 3-2-1-GO before the timer starts (0 = none)")]
+    public float countdownSeconds = 0f;
+    [Tooltip("Time trial: best lap must be under this to score full points (0 = no target)")]
+    public float targetLapTime = 0f;
 
     int next;
     int lap;
     float lapStart;
+    float countdown;
+    float goElapsed;
+    bool falseStart;
     readonly List<float> lapTimes = new List<float>();
+    string banner;
+    float bannerUntil;
 
     public float BestLap => string.IsNullOrEmpty(bestLapKey) ? 0f : PlayerPrefs.GetFloat(bestLapKey, 0f);
-    public float CurrentLapTime => Completed ? 0f : Elapsed - lapStart;
+    public float RaceTime => Mathf.Max(0f, Elapsed - goElapsed);
+    public float CurrentLapTime => Completed ? 0f : RaceTime - lapStart;
+    public bool Racing => countdown <= 0f;
+    float BestLapThisRun => lapTimes.Count == 0 ? 0f : Min(lapTimes);
+
+    public override int Score
+    {
+        get
+        {
+            if (!Completed) return 0;
+            int s = 100 - Crashes * pointsPerCrash;
+            if (targetLapTime > 0f) s -= Mathf.RoundToInt(Mathf.Max(0f, BestLapThisRun - targetLapTime) * 8f);
+            else s -= Mathf.RoundToInt(Mathf.Max(0f, RaceTime - parTime) * pointsPerSecondOverPar);
+            return Mathf.Clamp(s, 0, 100);
+        }
+    }
+
+    public override string Banner => Time.time < bannerUntil ? banner : null;
 
     public override string Status
     {
@@ -26,10 +54,12 @@ public class GateCourseLesson : Lesson
         {
             if (Completed)
             {
-                string s = laps > 1 ? $"Race finished in {Elapsed:0.0} s" : "Course complete!";
-                if (lapTimes.Count > 0) s += $"   best lap {Min(lapTimes):0.00} s";
+                string s = laps > 1 ? $"Race finished in {RaceTime:0.0} s" : "Course complete!";
+                if (lapTimes.Count > 0) s += $"   best lap {BestLapThisRun:0.00} s";
+                if (targetLapTime > 0f) s += BestLapThisRun <= targetLapTime ? "   TARGET BEATEN" : $"   target was {targetLapTime:0.0} s";
                 return s;
             }
+            if (!Racing) return falseStart ? "FALSE START - wait for GO" : $"Get ready... {Mathf.CeilToInt(countdown)}";
             string status = $"Gate {next + 1} / {gates.Length}";
             if (laps > 1)
             {
@@ -37,6 +67,7 @@ public class GateCourseLesson : Lesson
                 if (lapTimes.Count > 0) status += $"   last {lapTimes[lapTimes.Count - 1]:0.00}";
                 if (BestLap > 0f) status += $"   record {BestLap:0.00}";
             }
+            if (targetLapTime > 0f) status += $"   target {targetLapTime:0.0} s";
             return status;
         }
     }
@@ -47,7 +78,11 @@ public class GateCourseLesson : Lesson
         next = 0;
         lap = 0;
         lapStart = 0f;
+        countdown = countdownSeconds;
+        goElapsed = 0f;
+        falseStart = false;
         lapTimes.Clear();
+        if (countdownSeconds > 0f) ShowBanner(Mathf.CeilToInt(countdownSeconds).ToString(), 0.9f);
         foreach (var g in gates)
         {
             g.Passed -= OnGatePassed;
@@ -56,17 +91,47 @@ public class GateCourseLesson : Lesson
         Paint();
     }
 
+    public override void Tick(float dt)
+    {
+        base.Tick(dt);
+        if (Completed) return;
+        if (countdown > 0f)
+        {
+            int before = Mathf.CeilToInt(countdown);
+            countdown -= dt;
+            int after = Mathf.CeilToInt(countdown);
+            if (countdown <= 0f) { goElapsed = Elapsed; ShowBanner("GO!", 1.2f); Fx.PlayDing(drone.transform.position); }
+            else if (after != before) ShowBanner(after.ToString(), 0.9f);
+        }
+    }
+
+    void ShowBanner(string text, float seconds)
+    {
+        banner = text;
+        bannerUntil = Time.time + seconds;
+    }
+
     void OnGatePassed(Gate g)
     {
-        if (Completed || gates.Length == 0 || g != gates[next]) return;
+        if (Completed || gates.Length == 0) return;
+        if (!Racing)
+        {
+            // Jumped the start: restart the countdown.
+            falseStart = true;
+            countdown = countdownSeconds;
+            ShowBanner("FALSE START", 1.5f);
+            return;
+        }
+        if (g != gates[next]) return;
         Fx.PlayDing(g.transform.position);
 
         next++;
         if (next >= gates.Length)
         {
-            float lapTime = Elapsed - lapStart;
+            float lapTime = RaceTime - lapStart;
             lapTimes.Add(lapTime);
-            lapStart = Elapsed;
+            lapStart = RaceTime;
+            ShowBanner($"LAP {lapTime:0.00}", 1.5f);
             if (!string.IsNullOrEmpty(bestLapKey) && (BestLap <= 0f || lapTime < BestLap))
             {
                 PlayerPrefs.SetFloat(bestLapKey, lapTime);

@@ -28,14 +28,19 @@ public class PropVisuals : MonoBehaviour
         float omegaMax = Mathf.Max(1f, drone.OmegaMaxAtFullBattery);
         for (int i = 0; i < 4; i++)
         {
+            // A struck prop (DronePhysics.MotorHealth < 1) still physically spins and produces
+            // partial thrust - it never fully vanishes, it only ever loses 25-45% health - so the
+            // blades/disc should just look weaker, not disappear (that used to contradict both the
+            // physics and the "the quad keeps flying, badly" message).
+            float health = drone.MotorHealth[i];
             float f = drone.MotorOmega[i] / omegaMax;
             bool blur = f > blurStartFraction;
             if (blades[i] != null && blades[i].activeSelf == blur) blades[i].SetActive(!blur);
             if (discs[i] != null)
             {
-                float a = blur ? Mathf.Lerp(0.1f, discMaxAlpha, Mathf.Clamp01((f - blurStartFraction) / 0.3f)) : 0f;
+                float a = (blur ? Mathf.Lerp(0.1f, discMaxAlpha, Mathf.Clamp01((f - blurStartFraction) / 0.3f)) : 0f) * health;
                 discs[i].enabled = a > 0.001f;
-                discs[i].GetPropertyBlock(block);
+                block.Clear();
                 block.SetColor("_Color", new Color(discColor.r, discColor.g, discColor.b, a));
                 discs[i].SetPropertyBlock(block);
             }

@@ -28,6 +28,18 @@ public class WaterBalloonDropLesson : Lesson
         ? $"Done: {Points} points, {Hits} hits"
         : $"Balloons {Remaining}   Points {Points}   {last}";
 
+    public override int Score
+    {
+        get
+        {
+            if (!Completed) return 0;
+            int maxPoints = balloonsPerRun * 10;
+            float accuracy = maxPoints > 0 ? (float)Points / maxPoints : 0f;
+            int s = Mathf.RoundToInt(accuracy * 100f) - Crashes * pointsPerCrash;
+            return Mathf.Clamp(s, 0, 100);
+        }
+    }
+
     public override void Begin(DronePhysics drone, FlightController fc, CrashDetector crash)
     {
         base.Begin(drone, fc, crash);

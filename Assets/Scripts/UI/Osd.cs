@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using UnityEngine;
 
 /// <summary>
@@ -14,12 +14,15 @@ public class Osd : MonoBehaviour
     public PilotInput input;
     public LessonManager lessons;
     public CameraSwitcher cameras;
+    public MainMenu menu;
     public bool showAxisDebug;
     public bool showSticks = true;
 
     GUIStyle text, big, box, small, header;
     readonly StringBuilder sb = new StringBuilder();
     bool settingsOpen;
+    bool pausedBySettings;
+    public bool SettingsOpen => settingsOpen;
     StickCalibrator calibrator;
     Wind wind;
     FpvCameraEffects fpvFx;
@@ -47,7 +50,20 @@ public class Osd : MonoBehaviour
     {
         settingsOpen = !settingsOpen;
         input.UiCapturesInput = settingsOpen;
-        if (!settingsOpen) { calibrator.Cancel(); SaveSettings(); }
+        if (settingsOpen)
+        {
+            // Opening Settings mid-flight must actually pause the sim (like the Pause menu does),
+            // not just zero the stick input - otherwise gravity/physics keep running while the
+            // pilot is looking at sliders and the drone silently falls. Don't touch pause state
+            // that a menu already owns (e.g. opened from the Pause screen).
+            if (lessons != null && !lessons.Paused) { lessons.TogglePause(); pausedBySettings = true; }
+        }
+        else
+        {
+            calibrator.Cancel();
+            SaveSettings();
+            if (pausedBySettings) { if (lessons != null && lessons.Paused) lessons.TogglePause(); pausedBySettings = false; }
+        }
     }
 
     void BuildStyles()
@@ -76,6 +92,8 @@ public class Osd : MonoBehaviour
         float w = Screen.width, h = Screen.height;
         float pad = 12f;
         float line = text.fontSize * 1.25f;
+        if (menu != null && menu.HidesHud) { if (settingsOpen) DrawSettings(w, h, line); return; }
+        bool pausedByMenu = menu != null && menu.Current == MainMenu.State.Paused;
 
         // --- Telemetry (top-left) -------------------------------------------
         if (drone != null && flightController != null)
@@ -108,22 +126,23 @@ public class Osd : MonoBehaviour
             float ph;
             if (l == null)
             {
-                sb.AppendLine("<b>FREE FLIGHT</b>   <size=" + small.fontSize + ">press a number to pick a scenario</size>");
-                for (int i = 0; i < lessons.Lessons.Length && i < 9; i++)
-                    sb.AppendLine($"  <b>{i + 1}</b>  {lessons.Lessons[i].title}");
-                ph = line * (lessons.Lessons.Length + 2.2f);
+                sb.AppendLine("<b>" + Loc.T("FREE FLIGHT") + "</b>   <size=" + small.fontSize + ">" + Loc.T("no scoring - just fly") + "</size>");
+                sb.AppendLine("<size=" + small.fontSize + ">" + Loc.T("C camera   M mode   R fresh pack   F drop   Esc menu") + "</size>");
+                ph = line * 2.6f;
             }
             else
             {
-                sb.AppendLine($"<b>{lessons.CurrentIndex + 1}. {l.title}</b>   <size={small.fontSize}>({l.recommendedMode})   0 = free flight</size>");
-                sb.AppendLine(l.instructions);
+                var disc = lessons.CurrentDiscipline;
+                int pos = disc != null ? disc.lessons.IndexOf(lessons.CurrentIndex) + 1 : 0;
+                string best = new string('\u2605', l.BestStars).PadRight(3, '\u2606');
+                sb.AppendLine($"<b>{Loc.T(l.discipline)} - {l.DisplayTitle}</b>   <size={small.fontSize}>{Loc.T("drill")} {pos}/{disc?.lessons.Count}   {Loc.T("best")} {best}   ({l.recommendedMode})</size>");
+                sb.AppendLine(l.DisplayInstructions);
                 sb.AppendLine();
                 sb.AppendLine(l.Completed
-                    ? $"<color=#7CFC00><b>{l.Status}</b></color>   Score {l.Score} / 100"
-                    : $"<color=#FFD24D>{l.Status}</color>");
-                sb.AppendLine($"Time {l.Elapsed:0.0} s   Crashes {l.Crashes}");
-                if (l.Completed) sb.AppendLine("N = next scenario   Backspace = retry");
-                ph = line * 8f;
+                    ? $"<color=#7CFC00><b>{Loc.S(l.Status)}</b></color>   {Loc.T("Score")} {l.Score} / 100   {new string('\u2605', l.Stars).PadRight(3, '\u2606')}"
+                    : $"<color=#FFD24D>{Loc.S(l.Status)}</color>");
+                sb.AppendLine($"{Loc.T("Time")} {l.Elapsed:0.0} s   {Loc.T("Crashes")} {l.Crashes}");
+                ph = line * 8.5f;
             }
             float pw = Mathf.Min(520, w * 0.42f);
             Panel(new Rect(w - pw - pad, pad, pw, ph));
@@ -131,36 +150,65 @@ public class Osd : MonoBehaviour
         }
 
         // --- Centre banner ------------------------------------------------------
-        if (drone != null && drone.BatteryDead)
+        string lessonBanner = lessons != null && lessons.Current != null ? Loc.S(lessons.Current.Banner) : null;
+        if (pausedByMenu || settingsOpen) lessonBanner = null;
+        if (!string.IsNullOrEmpty(lessonBanner))
+        {
+            GUI.color = new Color(1f, 0.95f, 0.5f);
+            var huge = new GUIStyle(big) { fontSize = big.fontSize * 2 };
+            GUI.Label(new Rect(0, h * 0.3f, w, huge.fontSize * 1.5f), lessonBanner, huge);
+            GUI.color = Color.white;
+        }
+        if (!settingsOpen && lessons != null && Time.time - lessons.ToastTime < 3.5f && !string.IsNullOrEmpty(lessons.Toast))
+        {
+            GUI.color = new Color(1f, 0.85f, 0.3f);
+            GUI.Label(new Rect(0, h * 0.2f, w, big.fontSize * 1.5f), Loc.S(lessons.Toast), big);
+            GUI.color = Color.white;
+        }
+        if (pausedByMenu || settingsOpen) { }
+        else if (drone != null && drone.Damaged && Mathf.Repeat(Time.time, 1f) < 0.6f)
+        {
+            GUI.color = new Color(1f, 0.5f, 0.2f);
+            GUI.Label(new Rect(0, h * 0.62f, w, big.fontSize * 1.2f), Loc.S("PROP DAMAGED - land and press R"), big);
+            GUI.color = Color.white;
+        }
+        else if (drone != null && drone.Propwash > 0.35f)
+        {
+            GUI.color = new Color(1f, 0.8f, 0.4f, 0.85f);
+            GUI.Label(new Rect(0, h * 0.62f, w, big.fontSize * 1.2f), Loc.S("PROP WASH - add forward speed"), big);
+            GUI.color = Color.white;
+        }
+        if (pausedByMenu || settingsOpen) { }
+        else if (drone != null && drone.BatteryDead)
         {
             GUI.color = new Color(1f, 0.3f, 0.3f);
-            GUI.Label(new Rect(0, h * 0.3f, w, big.fontSize * 1.5f), "BATTERY EMPTY - press R for a fresh pack", big);
+            GUI.Label(new Rect(0, h * 0.3f, w, big.fontSize * 1.5f), Loc.S("BATTERY EMPTY - press R for a fresh pack"), big);
             GUI.color = Color.white;
         }
         else if (crashDetector != null && Time.time - crashDetector.MessageTime < 2.5f && !string.IsNullOrEmpty(crashDetector.Message))
         {
             GUI.color = crashDetector.Crashed ? new Color(1f, 0.3f, 0.3f) : new Color(1f, 1f, 0.6f);
-            GUI.Label(new Rect(0, h * 0.4f, w, big.fontSize * 1.5f), crashDetector.Message, big);
+            GUI.Label(new Rect(0, h * 0.4f, w, big.fontSize * 1.5f), Loc.S(crashDetector.Message), big);
             GUI.color = Color.white;
         }
         else if (flightController != null && !flightController.Armed && (crashDetector == null || !crashDetector.Crashed) && !settingsOpen)
         {
             GUI.color = new Color(1f, 1f, 1f, 0.8f);
-            GUI.Label(new Rect(0, h * 0.4f, w, big.fontSize * 1.5f), "Throttle down, press SPACE / (A) to arm", big);
+            GUI.Label(new Rect(0, h * 0.4f, w, big.fontSize * 1.5f), Loc.S("Throttle down, press SPACE / (A) to arm"), big);
             GUI.color = Color.white;
         }
         else if (drone != null && drone.BatteryFraction < 0.15f && Mathf.Repeat(Time.time, 1f) < 0.5f)
         {
             GUI.color = new Color(1f, 0.7f, 0.2f);
-            GUI.Label(new Rect(0, h * 0.12f, w, big.fontSize * 1.2f), "LOW BATTERY - LAND", big);
+            GUI.Label(new Rect(0, h * 0.12f, w, big.fontSize * 1.2f), Loc.S("LOW BATTERY - LAND"), big);
             GUI.color = Color.white;
         }
 
-        if (lessons != null && lessons.Paused)
-            GUI.Label(new Rect(0, h * 0.5f, w, big.fontSize * 1.5f), "PAUSED", big);
+        if (lessons != null && lessons.Paused && !pausedByMenu && !settingsOpen)
+            GUI.Label(new Rect(0, h * 0.5f, w, big.fontSize * 1.5f), Loc.T("PAUSED"), big);
 
         // --- Stick overlay (bottom centre) -----------------------------------------
-        if (showSticks && input != null && !settingsOpen)
+        if (showSticks && input != null && !settingsOpen && !pausedByMenu)
         {
             float s = Mathf.Min(120f, h * 0.14f);
             float y = h - s - line * 2f;
@@ -169,8 +217,8 @@ public class Osd : MonoBehaviour
         }
 
         // --- Key help (bottom) --------------------------------------------------
-        string help = "Arrows pitch/roll  W/S throttle  A/D yaw  |  Space arm  M mode  C camera  R reset  F drop  1-9 scenario  0 free  N next  Backspace retry  P pause  Tab settings  F1 axes";
-        GUI.Label(new Rect(pad, h - small.fontSize * 1.8f, w - 2 * pad, small.fontSize * 1.6f), help, small);
+        const string help = "Arrows pitch/roll  W/S throttle  A/D yaw  |  Space arm  M mode  C camera  R reset  F drop  N next drill  Backspace retry  Esc menu  Tab settings  F1 axes";
+        if (!pausedByMenu) GUI.Label(new Rect(pad, h - small.fontSize * 1.8f, w - 2 * pad, small.fontSize * 1.6f), help, small);
 
         // --- Joystick axis debug -------------------------------------------------
         if (showAxisDebug && input != null)
@@ -276,6 +324,13 @@ public class Osd : MonoBehaviour
                 if (GUILayout.Toggle(cameras.current == i, " " + cameras.names[i]) && cameras.current != i) cameras.Select(i);
             GUILayout.EndHorizontal();
         }
+
+        GUILayout.Space(8);
+        GUILayout.Label("<b>" + Loc.T("Language") + "</b>", header);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Toggle(Loc.Uz, " O'zbekcha") && !Loc.Uz) Loc.Lang = "uz";
+        if (GUILayout.Toggle(!Loc.Uz, " English") && Loc.Uz) Loc.Lang = "en";
+        GUILayout.EndHorizontal();
 
         GUILayout.Space(8);
         GUILayout.Label("<b>Audio</b>", header);

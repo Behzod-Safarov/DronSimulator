@@ -150,6 +150,14 @@ public class PilotInput : MonoBehaviour
             }
         }
 
+        if (UiCapturesInput)
+        {
+            // a menu owns the controls: no stick or button input reaches the flight controller
+            roll = pitch = yaw = 0f;
+            throttle = 0f;
+            ArmPressed = ModePressed = ResetPressed = CameraPressed = NextLessonPressed = RestartLessonPressed = DropPressed = false;
+            ScenarioKey = -1;
+        }
         PhysicalRaw = new Vector4(roll, pitch, throttle, yaw);
         if (OverrideDropPulse) { DropPressed = true; OverrideDropPulse = false; }
         if (OverrideActive)

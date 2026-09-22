@@ -17,7 +17,6 @@ public static class CarBuilder
     const float Clearance = 0.30f;
     const float LowerHeight = 0.5f;
     const float CabinHeight = 0.5f;
-    const float CabinLength = 2.0f;
     const float CabinWidth = 1.55f;
     public const float TopHeight = Clearance + LowerHeight + CabinHeight;
 
@@ -72,57 +71,89 @@ public static class CarBuilder
         var visual = new GameObject("Body").transform;
         visual.SetParent(root.transform, false);
 
-        // Lower hull + cabin combined into a single painted mesh.
-        var lower = MeshBuilder.Extrude(MeshBuilder.RoundedRect(Length, Width, 0.35f, 5), LowerHeight, "CarLower", 1.2f);
-        var cabin = MeshBuilder.Extrude(MeshBuilder.RoundedRect(CabinLength, CabinWidth, 0.3f, 5), CabinHeight, "CarCabin", 1.2f);
+        // Body = two convex side-profile extrusions (Extrude needs convex polygons for its cap
+        // fans, and a full sedan silhouette is concave at the base of each window): a lower hull
+        // with a rising hood and falling trunk, plus a trapezoid cabin whose sloped front/back
+        // faces are the windshield and rear window. Profiles are (length z, height y); the
+        // extrusion runs across the width. Coordinates are in the car's own frame (+Z forward).
+        const float belt = Clearance + LowerHeight;          // beltline
+        const float roofY = belt + CabinHeight;
+        const float wsBaseZ = Length * 0.5f - 1.35f;         // windshield meets the hood
+        const float rwBaseZ = -Length * 0.5f + 0.95f;        // rear window meets the trunk
+        const float roofFrontZ = wsBaseZ - 0.75f, roofRearZ = rwBaseZ + 0.55f;
+        var hullProfile = new[]
+        {
+            new Vector2(-Length * 0.5f, Clearance),           // rear bottom
+            new Vector2(Length * 0.5f, Clearance),            // front bottom
+            new Vector2(Length * 0.5f, Clearance + 0.36f),    // hood tip
+            new Vector2(wsBaseZ, belt),                       // hood back
+            new Vector2(rwBaseZ, belt),                       // trunk front
+            new Vector2(-Length * 0.5f, Clearance + 0.38f),   // trunk back
+        };
+        var cabinProfile = new[]
+        {
+            new Vector2(rwBaseZ, belt),
+            new Vector2(wsBaseZ, belt),
+            new Vector2(roofFrontZ, roofY),
+            new Vector2(roofRearZ, roofY),
+        };
+        // Extrude builds (x, z)-profiles along Y; this permutation maps profile x -> world Z,
+        // profile z -> world Y and the extrusion (local Y) -> world X (a proper rotation, det +1).
+        var sideToWorld = new Matrix4x4(new Vector4(0f, 0f, 1f, 0f), new Vector4(1f, 0f, 0f, 0f), new Vector4(0f, 1f, 0f, 0f), new Vector4(0f, 0f, 0f, 1f));
         var bodyMesh = MeshBuilder.Combine(new[]
         {
-            (lower, Matrix4x4.TRS(new Vector3(0f, Clearance + LowerHeight * 0.5f, 0f), Quaternion.identity, Vector3.one)),
-            (cabin, Matrix4x4.TRS(new Vector3(0f, Clearance + LowerHeight + CabinHeight * 0.5f, -0.15f), Quaternion.identity, Vector3.one)),
+            (MeshBuilder.Extrude(hullProfile, Width, "CarLower", 1.2f), sideToWorld),
+            (MeshBuilder.Extrude(cabinProfile, CabinWidth, "CarCabin", 1.2f), sideToWorld),
         }, "CarBody");
         SceneBuilder.MeshObject("Hull", visual, Cached(bodyMesh, "CarBody"), paintMat, Vector3.zero);
 
-        // Windscreen (raked forward) and rear window (raked back).
-        var wind = SceneBuilder.MeshObject("Windshield", visual, Cached(MeshBuilder.Box(new Vector3(CabinWidth - 0.1f, 0.05f, 0.9f), "CarWindshield"), "CarWindshield"),
-            mats.glass, new Vector3(0f, Clearance + LowerHeight + CabinHeight * 0.55f, CabinLength * 0.5f - 0.15f));
-        wind.transform.localRotation = Quaternion.Euler(55f, 0f, 0f);
-        var rear = SceneBuilder.MeshObject("RearWindow", visual, Cached(MeshBuilder.Box(new Vector3(CabinWidth - 0.15f, 0.05f, 0.6f), "CarRearWindow"), "CarRearWindow"),
-            mats.glass, new Vector3(0f, Clearance + LowerHeight + CabinHeight * 0.55f, -CabinLength * 0.5f - 0.35f));
-        rear.transform.localRotation = Quaternion.Euler(-50f, 0f, 0f);
+        // Glass lies on the cabin's sloped faces, pushed a hair out along each face normal.
+        Vector2 wsDir = new Vector2(roofFrontZ - wsBaseZ, roofY - belt);   // (dz, dy) up the windshield
+        Vector2 rwDir = new Vector2(roofRearZ - rwBaseZ, roofY - belt);    // (dz, dy) up the rear window
+        float wsLen = wsDir.magnitude, rwLen = rwDir.magnitude;
+        float wsAngle = Mathf.Atan2(wsDir.y, -wsDir.x) * Mathf.Rad2Deg;  // slope from horizontal
+        float rwAngle = Mathf.Atan2(rwDir.y, rwDir.x) * Mathf.Rad2Deg;
+        Vector3 wsMid = new Vector3(0f, belt + wsDir.y * 0.5f, wsBaseZ + wsDir.x * 0.5f) + new Vector3(0f, wsDir.x / wsLen * -1f, wsDir.y / wsLen) * 0.03f;
+        Vector3 rwMid = new Vector3(0f, belt + rwDir.y * 0.5f, rwBaseZ + rwDir.x * 0.5f) + new Vector3(0f, rwDir.x / rwLen, -rwDir.y / rwLen) * 0.03f;
+        var wind = SceneBuilder.MeshObject("Windshield", visual, Cached(MeshBuilder.Box(new Vector3(CabinWidth - 0.1f, 0.05f, wsLen), "CarWindshield"), "CarWindshield"), mats.glass, wsMid);
+        wind.transform.localRotation = Quaternion.Euler(wsAngle, 0f, 0f);
+        var rear = SceneBuilder.MeshObject("RearWindow", visual, Cached(MeshBuilder.Box(new Vector3(CabinWidth - 0.15f, 0.05f, rwLen), "CarRearWindow"), "CarRearWindow"), mats.glass, rwMid);
+        rear.transform.localRotation = Quaternion.Euler(-rwAngle, 0f, 0f);
 
-        // Side windows.
+        // Side windows sit in the cabin's vertical flanks; mirrors hang off the A-pillar base.
         var glassRenderers = new List<Renderer> { wind.GetComponent<Renderer>(), rear.GetComponent<Renderer>() };
+        float sideWinZ = (wsBaseZ + rwBaseZ + roofFrontZ + roofRearZ) * 0.25f;
         foreach (var side in new[] { -1f, 1f })
         {
-            var sw = SceneBuilder.MeshObject("SideWindow", visual, Cached(MeshBuilder.Box(new Vector3(0.03f, 0.28f, CabinLength - 0.3f), "CarSideWindow"), "CarSideWindow"),
-                mats.glass, new Vector3(side * (CabinWidth * 0.5f - 0.02f), Clearance + LowerHeight + CabinHeight * 0.62f, -0.15f));
+            var sw = SceneBuilder.MeshObject("SideWindow", visual, Cached(MeshBuilder.Box(new Vector3(0.03f, 0.3f, 1.2f), "CarSideWindow"), "CarSideWindow"),
+                mats.glass, new Vector3(side * (CabinWidth * 0.5f + 0.005f), belt + CabinHeight * 0.5f, sideWinZ));
             glassRenderers.Add(sw.GetComponent<Renderer>());
 
-            // Wing mirror.
             var mirror = SceneBuilder.MeshObject("Mirror", visual, Cached(MeshBuilder.Box(new Vector3(0.05f, 0.11f, 0.16f), "CarMirror"), "CarMirror"),
-                mats.trim, new Vector3(side * (CabinWidth * 0.5f + 0.08f), Clearance + LowerHeight + CabinHeight * 0.7f, CabinLength * 0.5f - 0.45f));
+                mats.trim, new Vector3(side * (CabinWidth * 0.5f + 0.08f), belt + 0.12f, wsBaseZ - 0.12f));
             mirror.transform.localRotation = Quaternion.Euler(0f, side * 20f, 0f);
 
-            // Door trim strips (front and rear door edges).
+            // Door trim strips (front and rear door edges), kept within the hull's flank height.
             foreach (var z in new[] { 0.35f, -0.45f })
-                SceneBuilder.MeshObject("DoorTrim", visual, Cached(MeshBuilder.Box(new Vector3(0.015f, 0.62f, 0.02f), "CarDoorTrim"), "CarDoorTrim"),
-                    mats.trim, new Vector3(side * (Width * 0.5f + 0.006f), Clearance + LowerHeight * 0.5f + 0.12f, z));
+                SceneBuilder.MeshObject("DoorTrim", visual, Cached(MeshBuilder.Box(new Vector3(0.015f, 0.42f, 0.02f), "CarDoorTrim"), "CarDoorTrim"),
+                    mats.trim, new Vector3(side * (Width * 0.5f + 0.006f), Clearance + 0.29f, z));
         }
 
-        // Head/tail lights.
+        // Head/tail lights, inside the front/rear faces of the hull.
         foreach (var side in new[] { -1f, 1f })
         {
-            SceneBuilder.MeshObject("Headlight", visual, Cached(MeshBuilder.Box(new Vector3(0.28f, 0.15f, 0.06f), "CarHeadlight"), "CarHeadlight"),
-                mats.headlight, new Vector3(side * (Width * 0.5f - 0.2f), Clearance + LowerHeight * 0.65f, Length * 0.5f - 0.01f));
-            SceneBuilder.MeshObject("Taillight", visual, Cached(MeshBuilder.Box(new Vector3(0.22f, 0.13f, 0.06f), "CarTaillight"), "CarTaillight"),
-                mats.taillight, new Vector3(side * (Width * 0.5f - 0.2f), Clearance + LowerHeight * 0.65f, -(Length * 0.5f - 0.01f)));
+            SceneBuilder.MeshObject("Headlight", visual, Cached(MeshBuilder.Box(new Vector3(0.28f, 0.12f, 0.06f), "CarHeadlight"), "CarHeadlight"),
+                mats.headlight, new Vector3(side * (Width * 0.5f - 0.2f), Clearance + 0.27f, Length * 0.5f - 0.01f));
+            SceneBuilder.MeshObject("Taillight", visual, Cached(MeshBuilder.Box(new Vector3(0.22f, 0.12f, 0.06f), "CarTaillight"), "CarTaillight"),
+                mats.taillight, new Vector3(side * (Width * 0.5f - 0.2f), Clearance + 0.28f, -(Length * 0.5f - 0.01f)));
         }
 
-        // Licence plates.
+        // Licence plates, on the bumpers' outer faces.
+        const float bumperY = Clearance + 0.09f, bumperFace = Length * 0.5f - 0.05f + 0.09f + 0.006f;
         SceneBuilder.MeshObject("PlateFront", visual, Cached(MeshBuilder.Box(new Vector3(0.34f, 0.11f, 0.01f), "CarPlate"), "CarPlate"),
-            mats.plate, new Vector3(0f, Clearance + 0.15f, Length * 0.5f + 0.005f));
+            mats.plate, new Vector3(0f, bumperY, bumperFace));
         SceneBuilder.MeshObject("PlateRear", visual, Cached(MeshBuilder.Box(new Vector3(0.34f, 0.11f, 0.01f), "CarPlate"), "CarPlate"),
-            mats.plate, new Vector3(0f, Clearance + 0.15f, -(Length * 0.5f + 0.005f)));
+            mats.plate, new Vector3(0f, bumperY, -bumperFace));
 
         // Exhaust pipe.
         var exhaust = SceneBuilder.Primitive(PrimitiveType.Cylinder, "Exhaust", visual, new Vector3(Width * 0.28f, Clearance * 0.45f, -(Length * 0.5f + 0.08f)), new Vector3(0.09f, 0.13f, 0.09f), mats.chrome, collider: false);
@@ -136,8 +167,8 @@ public static class CarBuilder
         col1.center = new Vector3(0f, Clearance + LowerHeight * 0.5f, 0f);
         col1.size = new Vector3(Width, LowerHeight, Length);
         var col2 = root.AddComponent<BoxCollider>();
-        col2.center = new Vector3(0f, Clearance + LowerHeight + CabinHeight * 0.5f, -0.15f);
-        col2.size = new Vector3(CabinWidth, CabinHeight, CabinLength);
+        col2.center = new Vector3(0f, belt + CabinHeight * 0.5f, (wsBaseZ + rwBaseZ) * 0.5f);
+        col2.size = new Vector3(CabinWidth, CabinHeight, (wsBaseZ - rwBaseZ + roofFrontZ - roofRearZ) * 0.5f); // box approximating the trapezoid cabin
         var block = root.AddComponent<DemoBlock>();
 
         var wreck = root.AddComponent<CarWreckage>();
@@ -156,8 +187,8 @@ public static class CarBuilder
             BuildWheel(root.transform, bodyRb, lp);
 
         // Bumpers: separate breakaway pieces (same joint mechanism as the wheels).
-        BuildBumper(root.transform, bodyRb, "FrontBumper", new Vector3(0f, Clearance + 0.15f, Length * 0.5f - 0.05f), new Vector3(Width + 0.05f, 0.22f, 0.18f));
-        BuildBumper(root.transform, bodyRb, "RearBumper", new Vector3(0f, Clearance + 0.15f, -(Length * 0.5f - 0.05f)), new Vector3(Width + 0.05f, 0.22f, 0.18f));
+        BuildBumper(root.transform, bodyRb, "FrontBumper", new Vector3(0f, bumperY, Length * 0.5f - 0.05f), new Vector3(Width + 0.05f, 0.22f, 0.18f));
+        BuildBumper(root.transform, bodyRb, "RearBumper", new Vector3(0f, bumperY, -(Length * 0.5f - 0.05f)), new Vector3(Width + 0.05f, 0.22f, 0.18f));
 
         return block;
     }

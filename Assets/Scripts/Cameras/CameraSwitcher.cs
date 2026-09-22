@@ -7,6 +7,8 @@ public class CameraSwitcher : MonoBehaviour
     public string[] names;
     public int current;
     public PilotInput input;
+    /// <summary>While true (menus up) every gameplay camera and its listener stay off.</summary>
+    public bool suppressed;
 
     public string CurrentName => names != null && current < names.Length ? names[current] : $"Camera {current}";
     public Camera Current => cameras != null && current < cameras.Length ? cameras[current] : null;
@@ -32,12 +34,12 @@ public class CameraSwitcher : MonoBehaviour
         Apply();
     }
 
-    void Apply()
+    public void Apply()
     {
         for (int i = 0; i < cameras.Length; i++)
         {
             if (cameras[i] == null) continue;
-            bool on = i == current;
+            bool on = !suppressed && i == current;
             cameras[i].enabled = on;
             var listener = cameras[i].GetComponent<AudioListener>();
             if (listener == null) listener = cameras[i].gameObject.AddComponent<AudioListener>();

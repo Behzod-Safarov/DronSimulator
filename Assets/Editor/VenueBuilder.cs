@@ -1,0 +1,403 @@
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.Rendering;
+
+/// <summary>
+/// The discipline venues spread over the flat part of the field:
+///   pit (origin)   - Basics: asphalt pad, hover box, landing pad, pylon (built by SceneBuilder)
+///   race track     - Racing / Agent: gravel oval with 8 gates, start arch, tyre walls, grandstand
+///   freestyle park - Freestyle: concrete pad with a skeleton building, window wall, ramps, pillars
+///   demolition yard- Demolition: fenced dirt yard with warehouses, containers, the parking lot and props
+/// Also exposes the ground masks the terrain painter and the tree/building scatter use.
+/// </summary>
+public static class VenueBuilder
+{
+    public static readonly Vector2 Race = new Vector2(80f, 26f);
+    public static readonly Vector2 Park = new Vector2(-80f, 26f);
+    public static readonly Vector2 Yard = new Vector2(0f, 92f);
+    public const float RaceRx = 24f, RaceRz = 14f;
+    public const float ParkW = 46f, ParkD = 38f;
+    public const float YardW = 66f, YardD = 56f;
+    public static readonly Vector2 PondCenter = new Vector2(-150f, -130f);
+    public const float PondRadius = 13f;
+
+    // ------------------------------------------------------------------ ground masks
+
+    static float SoftRect(float x, float z, Vector2 c, float w, float d, float edge)
+    {
+        float dx = Mathf.Max(0f, Mathf.Abs(x - c.x) - w * 0.5f), dz = Mathf.Max(0f, Mathf.Abs(z - c.y) - d * 0.5f);
+        return 1f - Mathf.Clamp01(Mathf.Sqrt(dx * dx + dz * dz) / edge);
+    }
+
+    /// <summary>1 on gravel: the race oval band, its start pad apron and the park apron.</summary>
+    public static float Gravel(float x, float z)
+    {
+        float ex = (x - Race.x) / RaceRx, ez = (z - Race.y) / RaceRz;
+        float e = Mathf.Sqrt(ex * ex + ez * ez);
+        float distOval = Mathf.Abs(e - 1f) * (RaceRx + RaceRz) * 0.5f;
+        float oval = 1f - Mathf.Clamp01((distOval - 2.2f) / 1.4f);
+        float pad = SoftRect(x, z, new Vector2(Race.x, Race.y - 6f), 12f, 9f, 1.5f);
+        float park = SoftRect(x, z, Park, ParkW + 2f, ParkD + 2f, 2f);
+        return Mathf.Max(oval, Mathf.Max(pad, park));
+    }
+
+    /// <summary>1 where the terrain must be flat (under each venue), soft 10 m edge.</summary>
+    public static float Flat(float x, float z)
+    {
+        float ex = (x - Race.x) / (RaceRx + 12f), ez = (z - Race.y) / (RaceRz + 12f);
+        float race = 1f - Mathf.Clamp01((Mathf.Sqrt(ex * ex + ez * ez) - 1f) * 4f);
+        float park = SoftRect(x, z, Park, ParkW + 6f, ParkD + 6f, 10f);
+        float yard = SoftRect(x, z, Yard, YardW + 6f, YardD + 6f, 10f);
+        return Mathf.Max(race, Mathf.Max(park, yard));
+    }
+
+    /// <summary>1 on bare dirt: the demolition yard.</summary>
+    public static float Dirt(float x, float z) => SoftRect(x, z, Yard, YardW, YardD, 3f);
+
+    /// <summary>1 inside the farm pond, soft 5 m edge - carves the basin and keeps the shore muddy.</summary>
+    public static float Pond(float x, float z) => 1f - Mathf.Clamp01((Vector2.Distance(new Vector2(x, z), PondCenter) - PondRadius) / 5f);
+
+    /// <summary>True inside any venue (plus margin) - used to keep trees and farm buildings out.</summary>
+    public static bool Keepout(float x, float z, float margin)
+    {
+        if (Mathf.Abs(x) < 26f + margin && z > -16f - margin && z < 16f + margin) return true; // pit
+        float ex = (x - Race.x) / (RaceRx + 8f + margin), ez = (z - Race.y) / (RaceRz + 8f + margin);
+        if (ex * ex + ez * ez < 1f) return true;
+        if (Mathf.Abs(x - Park.x) < ParkW * 0.5f + margin && Mathf.Abs(z - Park.y) < ParkD * 0.5f + margin) return true;
+        if (Mathf.Abs(x - Yard.x) < YardW * 0.5f + margin && Mathf.Abs(z - Yard.y) < YardD * 0.5f + margin) return true;
+        if (Vector2.Distance(new Vector2(x, z), PondCenter) < PondRadius + margin) return true;
+        return false;
+    }
+
+    // ------------------------------------------------------------------ shared bits
+
+    // tiling=1.2 combined with ParkConcrete's mesh uv=0.2 repeats the texture every ~3.3m -
+    // tiling=0.35 (the old value) combined the same way repeated only every ~14m and read as smeared/blurry.
+    static Material Concrete() => GeneratedAssets.PbrMaterial("Concrete", "asphalt_pit_lane", 1.2f, 0.4f, new Color(2.1f, 2.05f, 1.9f));
+    static Material Asphalt() => GeneratedAssets.PbrMaterial("Asphalt", "asphalt_pit_lane", 1f, 0.9f);
+
+    static Transform Spawn(Transform parent, string name, Vector3 pos, float yaw)
+    {
+        var s = new GameObject(name).transform;
+        s.SetParent(parent);
+        s.position = pos;
+        s.rotation = Quaternion.Euler(0f, yaw, 0f);
+        return s;
+    }
+
+    static GameObject Pad(string name, Transform parent, Terrain terrain, Material mat, float cx, float cz, float w, float d, float uv = 0.25f)
+    {
+        float g = SceneBuilder.GroundHeight(terrain, cx, cz);
+        var mesh = GeneratedAssets.SaveMesh(MeshBuilder.Box(new Vector3(w, 0.1f, d), name, uv), name);
+        var go = SceneBuilder.MeshObject(name, parent, mesh, mat, new Vector3(cx, g - 0.03f, cz));
+        go.AddComponent<BoxCollider>();
+        go.isStatic = true;
+        return go;
+    }
+
+    static Mesh ConeMesh()
+    {
+        return GeneratedAssets.SaveMesh(MeshBuilder.Lathe(new[] { new Vector2(0.22f, 0f), new Vector2(0.2f, 0.04f), new Vector2(0.05f, 0.55f), new Vector2(0.03f, 0.56f) }, 16, "Cone"), "Cone");
+    }
+
+    // ------------------------------------------------------------------ race track
+
+    public static (Gate[] gates, Transform spawn, Transform focus) BuildRaceTrack(Transform root, Terrain terrain)
+    {
+        var v = new GameObject("Venue - Race track").transform;
+        v.SetParent(root);
+        var steel = SceneBuilder.Mat("Steel", new Color(0.55f, 0.56f, 0.58f), glossiness: 0.45f, metallic: 0.8f);
+        var paint = SceneBuilder.Mat("PaintWhite", new Color(0.9f, 0.9f, 0.88f), glossiness: 0.3f);
+        var tyre = SceneBuilder.Mat("Tyre", new Color(0.06f, 0.06f, 0.06f), glossiness: 0.08f);
+        var tyreW = SceneBuilder.Mat("TyreWhite", new Color(0.9f, 0.9f, 0.86f), glossiness: 0.3f);
+        var checkerA = SceneBuilder.Mat("CheckerBlack", new Color(0.05f, 0.05f, 0.05f), glossiness: 0.2f);
+        var cone = SceneBuilder.Mat("Cone", new Color(1f, 0.4f, 0.05f), glossiness: 0.35f);
+        var bench = SceneBuilder.Mat("Bench", new Color(0.2f, 0.45f, 0.8f), glossiness: 0.3f);
+        var roof = GeneratedAssets.CorrugatedMetal("Roof", new Color(0.38f, 0.34f, 0.32f), 8f, glossiness: 0.2f, metallic: 0.05f);
+        var wall = GeneratedAssets.WeatheredConcrete("Wall", new Color(0.66f, 0.61f, 0.54f), 1.5f, glossiness: 0.08f, seed: 8);
+        var glass = SceneBuilder.Mat("BuildingWindow", new Color(0.15f, 0.22f, 0.28f), glossiness: 0.7f, metallic: 0.2f);
+        var flagMats = new[] { SceneBuilder.Mat("FlagRed", new Color(0.9f, 0.1f, 0.1f), glossiness: 0.1f), SceneBuilder.Mat("FlagBlue", new Color(0.1f, 0.3f, 0.9f), glossiness: 0.1f), SceneBuilder.Mat("FlagYellow", new Color(1f, 0.85f, 0.1f), glossiness: 0.1f) };
+
+        // Gates around the oval; gate 1 on the south straight is the start/finish
+        var gatesRoot = new GameObject("Gates").transform;
+        gatesRoot.SetParent(v);
+        const int count = 8;
+        var gates = new List<Gate>();
+        for (int i = 0; i < count; i++)
+        {
+            float t = Mathf.PI + (i / (float)count) * Mathf.PI * 2f;
+            var pos = new Vector3(Race.x + Mathf.Sin(t) * RaceRx, 0f, Race.y + Mathf.Cos(t) * RaceRz);
+            pos.y = SceneBuilder.GroundHeight(terrain, pos.x, pos.z);
+            var tangent = new Vector3(Mathf.Cos(t) * RaceRx, 0f, -Mathf.Sin(t) * RaceRz).normalized;
+            gates.Add(SceneBuilder.BuildGate(gatesRoot, i + 1, pos, tangent));
+        }
+
+        // Start/finish arch over gate 1 with a chequered banner
+        var g1 = gates[0].transform.position;
+        float ground = SceneBuilder.GroundHeight(terrain, g1.x, g1.z);
+        var arch = new GameObject("Start arch").transform;
+        arch.SetParent(v);
+        arch.position = new Vector3(g1.x, ground, g1.z);
+        arch.rotation = Quaternion.LookRotation(Vector3.left, Vector3.up);
+        foreach (var sx in new[] { -3.5f, 3.5f })
+            SceneBuilder.Primitive(PrimitiveType.Cylinder, "Post", arch, new Vector3(sx, 2.8f, 0f), new Vector3(0.22f, 2.8f, 0.22f), steel);
+        SceneBuilder.Primitive(PrimitiveType.Cube, "Beam", arch, new Vector3(0f, 5.5f, 0f), new Vector3(7.4f, 0.3f, 0.3f), steel);
+        for (int cx = 0; cx < 14; cx++)
+            for (int cy = 0; cy < 2; cy++)
+                SceneBuilder.Primitive(PrimitiveType.Cube, "Check", arch, new Vector3(-3.25f + cx * 0.5f, 4.55f + cy * 0.5f, 0f), new Vector3(0.5f, 0.5f, 0.04f), (cx + cy) % 2 == 0 ? checkerA : paint, collider: false);
+        SceneBuilder.Primitive(PrimitiveType.Cube, "Start line", v, new Vector3(g1.x, ground + 0.03f, g1.z), new Vector3(0.35f, 0.004f, 6f), paint, collider: false);
+
+        // Start pad inside the oval, where the pilots launch
+        Pad("RaceStartPad", v, terrain, Asphalt(), Race.x, Race.y - 6f, 10f, 7f);
+        float padY = SceneBuilder.GroundHeight(terrain, Race.x, Race.y - 6f);
+        SceneBuilder.Primitive(PrimitiveType.Cylinder, "Start circle", v, new Vector3(Race.x, padY + 0.022f, Race.y - 6f), new Vector3(0.7f, 0.002f, 0.7f), paint, collider: false);
+        var spawn = Spawn(v, "SpawnPoint Race", new Vector3(Race.x, padY + 0.06f, Race.y - 6f), -90f);
+
+        // Tyre walls on the outside of the four "corners"
+        var coneMesh = ConeMesh();
+        var rng = new System.Random(808);
+        foreach (var ang in new[] { 40f, 140f, 220f, 320f })
+        {
+            for (int k = 0; k < 5; k++)
+            {
+                float a = (ang + (k - 2) * 7f) * Mathf.Deg2Rad;
+                float x = Race.x + Mathf.Sin(a) * (RaceRx + 4.5f), z = Race.y + Mathf.Cos(a) * (RaceRz + 4.5f);
+                float gy = SceneBuilder.GroundHeight(terrain, x, z);
+                for (int s = 0; s < 3; s++)
+                    SceneBuilder.Primitive(PrimitiveType.Cylinder, "Tyre", v, new Vector3(x, gy + 0.11f + s * 0.22f, z), new Vector3(0.75f, 0.11f, 0.75f), (k + s) % 2 == 0 ? tyre : tyreW, collider: true);
+            }
+        }
+        // Cones lining the inside of the track
+        for (int i = 0; i < 24; i++)
+        {
+            float a = i / 24f * Mathf.PI * 2f;
+            float x = Race.x + Mathf.Sin(a) * (RaceRx - 3.2f), z = Race.y + Mathf.Cos(a) * (RaceRz - 3.2f);
+            var c = SceneBuilder.MeshObject("Cone", v, coneMesh, cone, new Vector3(x, SceneBuilder.GroundHeight(terrain, x, z), z));
+            var cCol = c.AddComponent<CapsuleCollider>();
+            cCol.radius = 0.15f;
+            cCol.height = 0.56f; // match ConeMesh()'s Lathe profile, which spans local Y in [0, 0.56]
+            cCol.center = new Vector3(0f, 0.28f, 0f);
+        }
+        // Flag poles outside the track
+        for (int i = 0; i < 8; i++)
+        {
+            float a = (i / 8f + 0.06f) * Mathf.PI * 2f;
+            float x = Race.x + Mathf.Sin(a) * (RaceRx + 8f), z = Race.y + Mathf.Cos(a) * (RaceRz + 8f);
+            float gy = SceneBuilder.GroundHeight(terrain, x, z);
+            SceneBuilder.Primitive(PrimitiveType.Cylinder, "Flag pole", v, new Vector3(x, gy + 3f, z), new Vector3(0.06f, 3f, 0.06f), steel);
+            var f = SceneBuilder.Primitive(PrimitiveType.Cube, "Flag", v, new Vector3(x + 0.6f, gy + 5.4f, z), new Vector3(1.2f, 0.7f, 0.02f), flagMats[i % 3], collider: false);
+            f.transform.rotation = Quaternion.Euler(0f, (float)rng.NextDouble() * 40f - 20f, 0f);
+        }
+
+        // Grandstand along the south straight, facing the track
+        var stand = new GameObject("Grandstand").transform;
+        stand.SetParent(v);
+        float sz = Race.y - RaceRz - 11f;
+        float sg = SceneBuilder.GroundHeight(terrain, Race.x, sz);
+        stand.position = new Vector3(Race.x, sg, sz);
+        for (int row = 0; row < 4; row++)
+        {
+            SceneBuilder.Primitive(PrimitiveType.Cube, "Tier", stand, new Vector3(0f, 0.3f + row * 0.6f, -row * 1.1f), new Vector3(16f, 0.6f, 1.1f), GeneratedAssets.WeatheredConcrete("Concrete2", new Color(0.7f, 0.7f, 0.68f), 2.5f)).isStatic = true;
+            for (int s = 0; s < 12; s++)
+                SceneBuilder.Primitive(PrimitiveType.Cube, "Seat", stand, new Vector3(-7.15f + s * 1.3f, 0.75f + row * 0.6f, -row * 1.1f - 0.2f), new Vector3(1.1f, 0.3f, 0.5f), bench, collider: false);
+        }
+        foreach (var sx in new[] { -7.5f, 0f, 7.5f })
+            SceneBuilder.Primitive(PrimitiveType.Cylinder, "Roof post", stand, new Vector3(sx, 2.6f, -4.2f), new Vector3(0.12f, 2.6f, 0.12f), steel);
+        var canopy = SceneBuilder.Primitive(PrimitiveType.Cube, "Canopy", stand, new Vector3(0f, 5.3f, -2.2f), new Vector3(17f, 0.15f, 5.5f), roof);
+        canopy.transform.rotation = Quaternion.Euler(-8f, 0f, 0f);
+
+        // Timing tower by the start line
+        var tower = new GameObject("Timing tower").transform;
+        tower.SetParent(v);
+        float tx = Race.x + 9f, tz = Race.y - RaceRz - 6f;
+        tower.position = new Vector3(tx, SceneBuilder.GroundHeight(terrain, tx, tz), tz);
+        SceneBuilder.Primitive(PrimitiveType.Cube, "Base", tower, new Vector3(0f, 2f, 0f), new Vector3(3f, 4f, 3f), wall).isStatic = true;
+        SceneBuilder.Primitive(PrimitiveType.Cube, "Cabin", tower, new Vector3(0f, 5.2f, 0f), new Vector3(3.6f, 2.4f, 3.6f), wall).isStatic = true;
+        SceneBuilder.Primitive(PrimitiveType.Cube, "Glass", tower, new Vector3(0f, 5.4f, 0f), new Vector3(3.65f, 1.2f, 3.65f), glass, collider: false);
+        SceneBuilder.Primitive(PrimitiveType.Cube, "Roof", tower, new Vector3(0f, 6.5f, 0f), new Vector3(4f, 0.2f, 4f), roof);
+
+        return (gates.ToArray(), spawn, arch);
+    }
+
+    // ------------------------------------------------------------------ freestyle park
+
+    public static (Transform spawn, Transform focus) BuildFreestylePark(Transform root, Terrain terrain)
+    {
+        var v = new GameObject("Venue - Freestyle park").transform;
+        v.SetParent(root);
+        var concrete = Concrete();
+        var raw = GeneratedAssets.WeatheredConcrete("RawConcrete", new Color(0.74f, 0.73f, 0.7f), 2f, seed: 5);
+        var rebar = SceneBuilder.Mat("Rust", new Color(0.45f, 0.25f, 0.12f), glossiness: 0.2f);
+        var container = GeneratedAssets.CorrugatedMetal("Container", new Color(0.12f, 0.3f, 0.5f), 5f);
+        var container2 = GeneratedAssets.CorrugatedMetal("Container2", new Color(0.6f, 0.2f, 0.1f), 5f);
+        var paint = SceneBuilder.Mat("PaintWhite", new Color(0.9f, 0.9f, 0.88f), glossiness: 0.3f);
+        var accent = SceneBuilder.Mat("ParkAccent", new Color(0.8f, 0.3f, 0.9f), glossiness: 0.3f);
+
+        Pad("ParkConcrete", v, terrain, concrete, Park.x, Park.y, ParkW, ParkD, 0.2f);
+        float g = SceneBuilder.GroundHeight(terrain, Park.x, Park.y);
+        float y0 = g + 0.02f;
+
+        // Skeleton building ("bando"): 3 open floors on columns, a solid stair core
+        var bando = new GameObject("Bando").transform;
+        bando.SetParent(v);
+        bando.position = new Vector3(Park.x + 9f, y0, Park.y + 5f);
+        const float fw = 15f, fd = 11f, fh = 3.4f;
+        for (int floor = 1; floor <= 3; floor++)
+            SceneBuilder.Primitive(PrimitiveType.Cube, $"Slab {floor}", bando, new Vector3(0f, floor * fh, 0f), new Vector3(fw, 0.3f, fd), raw).isStatic = true;
+        for (int ix = 0; ix < 3; ix++)
+            for (int iz = 0; iz < 3; iz++)
+            {
+                if (ix == 1 && iz == 1) continue; // open centre
+                SceneBuilder.Primitive(PrimitiveType.Cube, "Column", bando, new Vector3((ix - 1) * (fw * 0.5f - 0.3f), fh * 1.5f, (iz - 1) * (fd * 0.5f - 0.3f)), new Vector3(0.5f, fh * 3f, 0.5f), raw).isStatic = true;
+            }
+        SceneBuilder.Primitive(PrimitiveType.Cube, "Stair core", bando, new Vector3(fw * 0.5f - 1.6f, fh * 1.5f, -fd * 0.5f + 1.6f), new Vector3(3f, fh * 3f, 3f), raw).isStatic = true;
+        // Parapet on the roof and a few rebar stubs
+        SceneBuilder.Primitive(PrimitiveType.Cube, "Parapet N", bando, new Vector3(0f, fh * 3f + 0.5f, fd * 0.5f - 0.1f), new Vector3(fw, 0.7f, 0.2f), raw);
+        SceneBuilder.Primitive(PrimitiveType.Cube, "Parapet S", bando, new Vector3(0f, fh * 3f + 0.5f, -fd * 0.5f + 0.1f), new Vector3(fw, 0.7f, 0.2f), raw);
+        for (int i = 0; i < 6; i++)
+            SceneBuilder.Primitive(PrimitiveType.Cylinder, "Rebar", bando, new Vector3(-fw * 0.5f + 1f + i * 2.5f, fh * 3f + 0.6f, 0f), new Vector3(0.03f, 0.5f, 0.03f), rebar, collider: false);
+
+        // Window wall: 3 openings to thread through
+        var wallT = new GameObject("Window wall").transform;
+        wallT.SetParent(v);
+        wallT.position = new Vector3(Park.x - 12f, y0, Park.y - 9f);
+        wallT.rotation = Quaternion.Euler(0f, 20f, 0f);
+        SceneBuilder.Primitive(PrimitiveType.Cube, "Sill band", wallT, new Vector3(0f, 0.7f, 0f), new Vector3(12f, 1.4f, 0.4f), raw).isStatic = true;
+        SceneBuilder.Primitive(PrimitiveType.Cube, "Lintel band", wallT, new Vector3(0f, 4.45f, 0f), new Vector3(12f, 1.1f, 0.4f), raw).isStatic = true;
+        for (int i = 0; i < 4; i++)
+            SceneBuilder.Primitive(PrimitiveType.Cube, "Pier", wallT, new Vector3(-5.4f + i * 3.6f, 2.65f, 0f), new Vector3(1.2f, 2.5f, 0.4f), raw).isStatic = true;
+        for (int i = 0; i < 3; i++)
+            SceneBuilder.Primitive(PrimitiveType.Cube, "Frame", wallT, new Vector3(-3.6f + i * 3.6f, 1.45f, 0f), new Vector3(2.4f, 0.1f, 0.42f), accent, collider: false);
+
+        // Launch ramps (wedges) and a row of pillars for gaps
+        var ramp = GeneratedAssets.SaveMesh(MeshBuilder.Extrude(new[] { new Vector2(0f, 0f), new Vector2(5f, 0f), new Vector2(5f, 2.2f) }, 5f, "Ramp", 0.3f), "Ramp");
+        foreach (var (rx, rz, yaw) in new[] { (-6f, 10f, 0f), (12f, -12f, 200f) })
+        {
+            var r = SceneBuilder.MeshObject("Ramp", v, ramp, concrete, new Vector3(Park.x + rx, y0, Park.y + rz));
+            r.transform.rotation = Quaternion.Euler(-90f, yaw, 0f);
+            r.AddComponent<MeshCollider>().convex = true;
+            r.isStatic = true;
+        }
+        for (int i = 0; i < 6; i++)
+        {
+            float h = 2.5f + (i % 3) * 1.6f;
+            SceneBuilder.Primitive(PrimitiveType.Cube, "Pillar", v, new Vector3(Park.x - 16f + i * 3f, y0 + h * 0.5f, Park.y + 12f), new Vector3(0.8f, h, 0.8f), raw).isStatic = true;
+        }
+        // Containers: two on the ground, one across the top
+        var cA = SceneBuilder.Primitive(PrimitiveType.Cube, "Container A", v, new Vector3(Park.x + 14f, y0 + 1.3f, Park.y - 3f), new Vector3(2.4f, 2.6f, 12f), container);
+        var cB = SceneBuilder.Primitive(PrimitiveType.Cube, "Container B", v, new Vector3(Park.x + 18.5f, y0 + 1.3f, Park.y - 3f), new Vector3(2.4f, 2.6f, 12f), container2);
+        var cC = SceneBuilder.Primitive(PrimitiveType.Cube, "Container C", v, new Vector3(Park.x + 16.2f, y0 + 3.9f, Park.y - 1f), new Vector3(2.4f, 2.6f, 12f), container);
+        cC.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+        cA.isStatic = cB.isStatic = cC.isStatic = true;
+
+        // Painted centre mark = spawn
+        SceneBuilder.Primitive(PrimitiveType.Cylinder, "Centre mark", v, new Vector3(Park.x, y0 + 0.032f, Park.y - 2f), new Vector3(0.7f, 0.002f, 0.7f), paint, collider: false);
+        var spawn = Spawn(v, "SpawnPoint Park", new Vector3(Park.x, y0 + 0.06f, Park.y - 2f), 0f);
+        return (spawn, bando);
+    }
+
+    // ------------------------------------------------------------------ demolition yard
+
+    public static (Transform spawn, Transform focus) BuildDemolitionYard(Transform root, Terrain terrain)
+    {
+        var v = new GameObject("Venue - Demolition yard").transform;
+        v.SetParent(root);
+        var steel = SceneBuilder.Mat("Steel", new Color(0.55f, 0.56f, 0.58f), glossiness: 0.45f, metallic: 0.8f);
+        var fence = SceneBuilder.Mat("Fence", new Color(0.42f, 0.42f, 0.44f), cutout: true, glossiness: 0.3f);
+        fence.mainTexture = ProceduralTextures.ChainLink();
+        fence.mainTextureScale = new Vector2(40f, 5f);
+        var wall = GeneratedAssets.CorrugatedMetal("WarehouseWall", new Color(0.55f, 0.58f, 0.62f), 6f);
+        var roof = GeneratedAssets.CorrugatedMetal("Roof", new Color(0.38f, 0.34f, 0.32f), 8f, glossiness: 0.2f, metallic: 0.05f);
+        var door = GeneratedAssets.CorrugatedMetal("RollDoor", new Color(0.3f, 0.32f, 0.35f), 3f, glossiness: 0.5f, metallic: 0.25f);
+        var stripe = SceneBuilder.Mat("HazardStripe", new Color(1f, 0.75f, 0.05f), glossiness: 0.3f);
+        var black = SceneBuilder.Mat("CheckerBlack", new Color(0.05f, 0.05f, 0.05f), glossiness: 0.2f);
+        var container = GeneratedAssets.CorrugatedMetal("Container", new Color(0.12f, 0.3f, 0.5f), 5f);
+        var container2 = GeneratedAssets.CorrugatedMetal("Container2", new Color(0.6f, 0.2f, 0.1f), 5f);
+        var jersey = GeneratedAssets.WeatheredConcrete("Concrete2", new Color(0.7f, 0.7f, 0.68f), 2.5f);
+
+        float hw = YardW * 0.5f, hd = YardD * 0.5f;
+        // Chain-link fence with a gap (the gate) in the middle of the south side
+        void FenceRun(Vector3 a, Vector3 b)
+        {
+            float len = Vector3.Distance(a, b);
+            int posts = Mathf.Max(2, Mathf.RoundToInt(len / 4f) + 1);
+            for (int i = 0; i < posts; i++)
+            {
+                var p = Vector3.Lerp(a, b, i / (float)(posts - 1));
+                float gy = SceneBuilder.GroundHeight(terrain, p.x, p.z);
+                SceneBuilder.Primitive(PrimitiveType.Cylinder, "Fence post", v, new Vector3(p.x, gy + 1.2f, p.z), new Vector3(0.08f, 1.2f, 0.08f), steel);
+            }
+            var mid = (a + b) * 0.5f;
+            float gm = SceneBuilder.GroundHeight(terrain, mid.x, mid.z);
+            var mesh = SceneBuilder.Primitive(PrimitiveType.Cube, "Fence mesh", v, new Vector3(mid.x, gm + 1.2f, mid.z), new Vector3(len, 2.3f, 0.03f), fence);
+            mesh.transform.rotation = Quaternion.LookRotation(Vector3.Cross(b - a, Vector3.up), Vector3.up);
+            mesh.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+            var rail = SceneBuilder.Primitive(PrimitiveType.Cube, "Fence rail", v, new Vector3(mid.x, gm + 2.35f, mid.z), new Vector3(len, 0.06f, 0.06f), steel, collider: false);
+            rail.transform.rotation = mesh.transform.rotation;
+        }
+        var sw = new Vector3(Yard.x - hw, 0f, Yard.y - hd);
+        var se = new Vector3(Yard.x + hw, 0f, Yard.y - hd);
+        var ne = new Vector3(Yard.x + hw, 0f, Yard.y + hd);
+        var nw = new Vector3(Yard.x - hw, 0f, Yard.y + hd);
+        FenceRun(sw, new Vector3(Yard.x - 5f, 0f, Yard.y - hd));
+        FenceRun(new Vector3(Yard.x + 5f, 0f, Yard.y - hd), se);
+        FenceRun(se, ne);
+        FenceRun(ne, nw);
+        FenceRun(nw, sw);
+        // Gate pillars with hazard stripes
+        foreach (var gx in new[] { Yard.x - 5f, Yard.x + 5f })
+        {
+            float gy = SceneBuilder.GroundHeight(terrain, gx, Yard.y - hd);
+            for (int s = 0; s < 6; s++)
+                SceneBuilder.Primitive(PrimitiveType.Cube, "Gate pillar", v, new Vector3(gx, gy + 0.25f + s * 0.5f, Yard.y - hd), new Vector3(0.5f, 0.5f, 0.5f), s % 2 == 0 ? stripe : black);
+        }
+
+        // Warehouses along the north side
+        void Warehouse(float cx, float cz, Vector3 size, float yaw)
+        {
+            var w = new GameObject("Warehouse").transform;
+            w.SetParent(v);
+            w.position = new Vector3(cx, SceneBuilder.GroundHeight(terrain, cx, cz), cz);
+            w.rotation = Quaternion.Euler(0f, yaw, 0f);
+            SceneBuilder.Primitive(PrimitiveType.Cube, "Walls", w, new Vector3(0f, size.y * 0.5f, 0f), size, wall).isStatic = true;
+            SceneBuilder.Primitive(PrimitiveType.Cube, "Roof", w, new Vector3(0f, size.y + 0.25f, 0f), new Vector3(size.x + 0.8f, 0.5f, size.z + 0.8f), roof).isStatic = true;
+            SceneBuilder.Primitive(PrimitiveType.Cube, "Roll door", w, new Vector3(-size.x * 0.25f, 2f, size.z * 0.5f + 0.03f), new Vector3(4.5f, 4f, 0.06f), door, collider: false);
+            SceneBuilder.Primitive(PrimitiveType.Cube, "Roll door 2", w, new Vector3(size.x * 0.25f, 2f, size.z * 0.5f + 0.03f), new Vector3(4.5f, 4f, 0.06f), door, collider: false);
+            SceneBuilder.Primitive(PrimitiveType.Cube, "Stripe", w, new Vector3(0f, size.y - 0.6f, size.z * 0.5f + 0.03f), new Vector3(size.x, 0.4f, 0.04f), stripe, collider: false);
+        }
+        Warehouse(Yard.x - 20f, Yard.y + hd - 8f, new Vector3(18f, 7f, 12f), 0f);
+        Warehouse(Yard.x + 21f, Yard.y + hd - 7f, new Vector3(14f, 6f, 10f), 0f);
+
+        // Floodlight masts at the corners
+        foreach (var c in new[] { sw, se, ne, nw })
+        {
+            var p = Vector3.Lerp(c, new Vector3(Yard.x, 0f, Yard.y), 0.08f);
+            float gy = SceneBuilder.GroundHeight(terrain, p.x, p.z);
+            SceneBuilder.Primitive(PrimitiveType.Cylinder, "Mast", v, new Vector3(p.x, gy + 6f, p.z), new Vector3(0.18f, 6f, 0.18f), steel);
+            var head = SceneBuilder.Primitive(PrimitiveType.Cube, "Floodlights", v, new Vector3(p.x, gy + 12.2f, p.z), new Vector3(1.6f, 0.5f, 0.5f), black, collider: false);
+            head.transform.LookAt(new Vector3(Yard.x, gy + 12.2f, Yard.y));
+        }
+
+        // Container stacks along the east fence, jersey barriers by the entrance
+        for (int i = 0; i < 3; i++)
+        {
+            float cx = Yard.x + hw - 4f, cz = Yard.y - 14f + i * 13f;
+            float gy = SceneBuilder.GroundHeight(terrain, cx, cz);
+            SceneBuilder.Primitive(PrimitiveType.Cube, "Container", v, new Vector3(cx, gy + 1.3f, cz), new Vector3(2.4f, 2.6f, 12f), i % 2 == 0 ? container : container2).isStatic = true;
+            if (i == 1) SceneBuilder.Primitive(PrimitiveType.Cube, "Container top", v, new Vector3(cx, gy + 3.9f, cz), new Vector3(2.4f, 2.6f, 12f), container).isStatic = true;
+        }
+        for (int i = 0; i < 6; i++)
+        {
+            float bx = Yard.x - 14f + i * 2.2f, bz = Yard.y - hd + 6f;
+            float gy = SceneBuilder.GroundHeight(terrain, bx, bz);
+            SceneBuilder.Primitive(PrimitiveType.Cube, "Jersey barrier", v, new Vector3(bx, gy + 0.45f, bz), new Vector3(2.1f, 0.9f, 0.55f), jersey).isStatic = true;
+        }
+
+        // Launch pad just inside the gate
+        Pad("YardPad", v, terrain, Asphalt(), Yard.x, Yard.y - hd + 3f, 8f, 5f);
+        float py = SceneBuilder.GroundHeight(terrain, Yard.x, Yard.y - hd + 3f);
+        var spawn = Spawn(v, "SpawnPoint Yard", new Vector3(Yard.x, py + 0.06f, Yard.y - hd + 3f), 0f);
+        return (spawn, spawn);
+    }
+}
