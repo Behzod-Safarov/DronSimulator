@@ -55,6 +55,7 @@ public static class DroneModelBuilder
             BuildMotor(vis, names[i], p);
             BuildMotorWire(vis, names[i], p);
             BuildProp(vis, physics, names[i], p, DronePhysics.SpinDirection[i] > 0f, out result.props[i], out result.blades[i], out result.discs[i]);
+            BuildFoot(vis, names[i], p);
         }
         return result;
     }
@@ -239,6 +240,29 @@ public static class DroneModelBuilder
     }
 
     // ------------------------------------------------------------------ motors & props
+
+    /// <summary>
+    /// TPU landing foot under each motor mount. Real freestyle quads wear these, and without
+    /// them the frame hangs ~1 cm above the ground with nothing visibly holding it up - at any
+    /// normal viewing distance that gap is sub-pixel and the arms read as sunk into the surface.
+    /// The tips end at the physics collider's own bottom (local y = -0.0175), so what you see
+    /// touching the ground is what is actually carrying the drone.
+    /// </summary>
+    static void BuildFoot(Transform vis, string name, Vector3 p)
+    {
+        const float top = -0.002f, tip = -0.0175f;          // from just under the arm to the collider floor
+        var leg = Lathe(new[]
+        {
+            new Vector2(0.0075f, top),
+            new Vector2(0.0062f, top - 0.004f),
+            new Vector2(0.0042f, tip + 0.003f),
+            new Vector2(0.0040f, tip),
+        }, 14, $"Foot_{name}");
+        var at = new Vector3(p.x * 0.82f, 0f, p.z * 0.82f);
+        Part(vis, $"Foot {name}", leg, mats.tpu, at, Quaternion.identity);
+        Part(vis, $"Foot pad {name}", Lathe(new[] { new Vector2(0.0052f, tip + 0.0016f), new Vector2(0.0050f, tip + 0.0004f), new Vector2(0.0030f, tip) }, 14, $"FootPad_{name}"),
+            mats.tpuAccent, at, Quaternion.identity);
+    }
 
     static void BuildMotor(Transform vis, string name, Vector3 p)
     {

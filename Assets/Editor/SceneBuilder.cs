@@ -298,7 +298,8 @@ public static class SceneBuilder
                 float far = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 300f) / 200f));
                 float fieldMask = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 30f) / 60f));
                 float h = (hills * (0.06f + 0.25f * far) * flat + micro * fieldMask + rock * flat) * (1f - VenueBuilder.Flat(wx, wz));
-                h -= VenueBuilder.Pond(wx, wz) * 0.04f; // carve the farm pond's basin (~3.2 m deep)
+                h -= VenueBuilder.Pond(wx, wz) * 0.04f; // carve the farm pond basin (~3.2 m deep)
+                h += VenueBuilder.HeightOffset(wx, wz) / TerrainHeight; // biome shaping: mesa, dunes, rubble mounds, quarry basin
                 heights[y, x] = 0.0125f + h;
             }
         data.SetHeights(0, 0, heights);
@@ -311,11 +312,17 @@ public static class SceneBuilder
         var dry = TerrainLayerAsset("DryGrassLayer", "aerial_grass_rock", 7f);
         var dirt = TerrainLayerAsset("DirtLayer", "dirt_aerial_02", 6.5f);
         var gravel = TerrainLayerAsset("GravelLayer", "gravel_road", 3f);
-        data.terrainLayers = new[] { grass, dirt, gravel, dry };
+        // Biome grounds: warm sand for the desert plateau, grey stone for the quarry and the
+        // urban wasteland - both recoloured from the same Poly Haven sets.
+        var sandTex = ProceduralTextures.GreenGrade("Assets/External/PolyHaven/dirt_aerial_02_Diffuse.jpg", "Sand_Diffuse", 0.1f, 0.85f, 1.1f, 1.02f);
+        var stoneTex = ProceduralTextures.GreenGrade("Assets/External/PolyHaven/aerial_grass_rock_Diffuse.jpg", "Stone_Diffuse", 0.09f, 0.9f, 0.14f, 0.78f);
+        var sand = TerrainLayerAsset("SandLayer", "dirt_aerial_02", 7f, sandTex);
+        var stone = TerrainLayerAsset("StoneLayer", "aerial_grass_rock", 6f, stoneTex);
+        data.terrainLayers = new[] { grass, dirt, gravel, dry, sand, stone };
 
         int ares = 512;
         data.alphamapResolution = ares;
-        var alpha = new float[ares, ares, 4];
+        var alpha = new float[ares, ares, 6];
         for (int y = 0; y < ares; y++)
             for (int x = 0; x < ares; x++)
             {
@@ -338,10 +345,25 @@ public static class SceneBuilder
                 // Muddy shore around the pond (the water plane itself covers the flooded centre).
                 d = Mathf.Max(d, Mathf.Clamp01(VenueBuilder.Pond(wx, wz) * 1.5f) * 0.5f);
                 float veg = (1f - d) * (1f - g);
-                alpha[y, x, 0] = veg * (1f - dryW);
-                alpha[y, x, 3] = veg * dryW;
-                alpha[y, x, 1] = d * (1f - g);
-                alpha[y, x, 2] = g;
+                // Meadow mix (the original look), then blended toward each biome ground.
+                float w0 = veg * (1f - dryW), w1 = d * (1f - g), w2 = g, w3 = veg * dryW, w4 = 0f, w5 = 0f;
+                float desert = VenueBuilder.Desert(wx, wz), urban = VenueBuilder.Urban(wx, wz), quarryW = VenueBuilder.Quarry(wx, wz);
+                if (desert > 0f)
+                {
+                    // sand everywhere, gravel kept where the track is, stone on the steep mesa faces
+                    float st = Mathf.Max(slopeExposure, 0f);
+                    Blend(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, desert, 0f, 0.1f, g, 0f, 0.75f - 0.55f * (1f - st) + 0.15f * st, 0.15f + 0.5f * st);
+                }
+                if (urban > 0f)
+                    Blend(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, urban, 0f, 0.15f, Mathf.Max(g, 0.3f), 0.04f, 0f, 0.55f);
+                if (quarryW > 0f)
+                    Blend(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, quarryW, 0f, 0.15f, Mathf.Max(g, 0.25f), 0f, 0.05f, 0.62f);
+                alpha[y, x, 0] = w0;
+                alpha[y, x, 1] = w1;
+                alpha[y, x, 2] = w2;
+                alpha[y, x, 3] = w3;
+                alpha[y, x, 4] = w4;
+                alpha[y, x, 5] = w5;
             }
         data.SetAlphamaps(0, 0, alpha);
 
@@ -378,6 +400,7 @@ public static class SceneBuilder
                 float patch = Mathf.PerlinNoise(500f + wx * 0.05f, 800f + wz * 0.05f);
                 float dens = 2.8f + patch * 2.4f;
                 if (r > 200f) dens *= 0.5f;
+                dens *= VenueBuilder.Meadow(wx, wz); // only the meadow biome is grassed
                 map[y, x] = Mathf.FloorToInt((dens + (float)rng.NextDouble() * 0.9f) * (1f - track));
             }
         data.SetDetailLayer(0, 0, 0, map);
@@ -423,6 +446,14 @@ public static class SceneBuilder
                 }
     }
 
+    /// <summary>Eases the six terrain layer weights toward a biome target by k.</summary>
+    static void Blend(ref float w0, ref float w1, ref float w2, ref float w3, ref float w4, ref float w5,
+                      float k, float t0, float t1, float t2, float t3, float t4, float t5)
+    {
+        w0 = Mathf.Lerp(w0, t0, k); w1 = Mathf.Lerp(w1, t1, k); w2 = Mathf.Lerp(w2, t2, k);
+        w3 = Mathf.Lerp(w3, t3, k); w4 = Mathf.Lerp(w4, t4, k); w5 = Mathf.Lerp(w5, t5, k);
+    }
+
     static float PitApron(float x, float z)
     {
         // gravel around the asphalt pad
@@ -462,7 +493,7 @@ public static class SceneBuilder
         var env = new GameObject("Environment").transform;
 
         var asphalt = GeneratedAssets.PbrMaterial("Asphalt", "asphalt_pit_lane", 1f, 0.9f);
-        var paint = Mat("PaintWhite", new Color(0.9f, 0.9f, 0.88f), glossiness: 0.3f);
+        var paint = Mat("PaintWhite", new Color(0.72f, 0.72f, 0.7f), glossiness: 0.25f);
         var steel = Mat("Steel", new Color(0.55f, 0.56f, 0.58f), glossiness: 0.45f, metallic: 0.8f);
         var netMat = Mat("SafetyNet", new Color(0.05f, 0.05f, 0.05f, 0.4f), transparent: true);
         var wall = GeneratedAssets.WeatheredConcrete("Wall", new Color(0.66f, 0.61f, 0.54f), 1.5f, glossiness: 0.08f, seed: 8); // rendered-plaster farm walls
@@ -473,8 +504,9 @@ public static class SceneBuilder
         var pit = MeshObject("Pit asphalt", env, pitMesh, asphalt, new Vector3(0f, -0.03f, -3f));
         pit.AddComponent<BoxCollider>();
         pit.isStatic = true;
-        Primitive(PrimitiveType.Cylinder, "Start circle", env, new Vector3(0f, 0.022f, 0f), new Vector3(0.7f, 0.002f, 0.7f), paint, collider: false);
-        Primitive(PrimitiveType.Cylinder, "Start dot", env, new Vector3(0f, 0.025f, 0f), new Vector3(0.25f, 0.002f, 0.25f), asphalt, collider: false);
+        // A painted RING flush with the asphalt: the drone is small and dark, so it reads much
+        // better against the asphalt inside the ring than silhouetted on white paint.
+        PaintRing("Start ring", env, paint, asphalt, new Vector3(0f, 0.02f, 0f), 0.46f, 0.575f);
 
         // Pilot tent
         var tent = new GameObject("Pit tent").transform;
@@ -496,6 +528,7 @@ public static class SceneBuilder
 
         BuildTrees(env, terrain);
         BuildPond(env, terrain);
+        VenueBuilder.BuildLandscapes(env, terrain);
 
         var rng = new System.Random(1234);
         float Rand(float lo, float hi) => lo + (float)rng.NextDouble() * (hi - lo);
@@ -511,7 +544,7 @@ public static class SceneBuilder
             float ang = Rand(0f, Mathf.PI * 2f);
             float r = Rand(80f, 260f);
             float x = Mathf.Cos(ang) * r, z = Mathf.Sin(ang) * r;
-            if (VenueBuilder.Keepout(x, z, 16f)) continue;
+            if (VenueBuilder.Keepout(x, z, 16f) || VenueBuilder.Meadow(x, z) < 0.7f) continue;
             var size = new Vector3(Rand(8f, 18f), Rand(4f, 8f), Rand(8f, 16f));
             float y = GroundHeight(terrain, x, z);
             var b = new GameObject($"Building {i}").transform;
@@ -623,7 +656,7 @@ public static class SceneBuilder
             float ang = Rand(0f, Mathf.PI * 2f);
             float r = Rand(40f, 300f);
             float x = Mathf.Cos(ang) * r, z = Mathf.Sin(ang) * r;
-            if (VenueBuilder.Keepout(x, z, 6f)) continue;
+            if (VenueBuilder.Keepout(x, z, 6f) || VenueBuilder.Meadow(x, z) < 0.6f) continue;
             float n = Mathf.PerlinNoise(x * 0.01f + 50f, z * 0.01f + 50f);
             if (rng.NextDouble() > n * 1.6f) continue;   // clumps
             Place(rng.Next(0, 4), x, z, Rand(0.85f, 1.2f));
@@ -636,13 +669,35 @@ public static class SceneBuilder
             float r = Rand(330f, 420f);
             Place(rng.Next(0, 3), Mathf.Cos(ang) * r, Mathf.Sin(ang) * r, Rand(1.1f, 1.5f));
         }
+        // Desert scrub: the bush variant in a bleached palette, sparse, on the sand only
+        var scrub = Mat("DesertScrub", new Color(0.72f, 0.66f, 0.42f), cutout: true, glossiness: 0.12f);
+        scrub.mainTexture = leafTex;
+        scrub.enableInstancing = true;
+        for (int i = 0; i < 130; i++)
+        {
+            float ang = Rand(0f, Mathf.PI * 2f), r = Rand(30f, 100f);
+            float x = VenueBuilder.Race.x + Mathf.Cos(ang) * r, z = VenueBuilder.Race.y + Mathf.Sin(ang) * r;
+            if (VenueBuilder.Keepout(x, z, 3f) || VenueBuilder.Desert(x, z) < 0.5f) continue;
+            var (mesh, height, crown) = variants[4];
+            float y = GroundHeight(terrain, x, z) - 0.1f;
+            var go = new GameObject("Scrub");
+            go.transform.SetParent(trees);
+            go.transform.position = new Vector3(x, y, z);
+            go.transform.rotation = Quaternion.Euler(0f, Rand(0f, 360f), 0f);
+            go.transform.localScale = new Vector3(Rand(0.5f, 1.1f), Rand(0.35f, 0.7f), Rand(0.5f, 1.1f));
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterials = new[] { bark, scrub };
+            go.isStatic = true;
+        }
+
         // Bushes near the pit and along the track
         for (int i = 0; i < 45; i++)
         {
             float ang = Rand(0f, Mathf.PI * 2f);
             float r = Rand(30f, 120f);
             float x = Mathf.Cos(ang) * r, z = Mathf.Sin(ang) * r;
-            if (VenueBuilder.Keepout(x, z, 3f)) continue;
+            if (VenueBuilder.Keepout(x, z, 3f) || VenueBuilder.Meadow(x, z) < 0.6f) continue;
             Place(4, x, z, Rand(0.7f, 1.3f), true);
         }
     }
@@ -768,7 +823,11 @@ public static class SceneBuilder
         losCam.fieldOfView = 60f;
         losCam.farClipPlane = 1500f;
         losCam.allowHDR = true;
-        los.AddComponent<LineOfSightCamera>().target = drone;
+        var losView = los.AddComponent<LineOfSightCamera>();
+        losView.target = drone;
+        // The pilot stands ~8 m from the pad, which is where the zoom used to only begin - a
+        // 0.35 m quad was a speck on screen. Start zooming at 4 m so it stays readable.
+        losView.zoomStartDistance = 4f;
 
         var fpvCam = drone.GetComponentInChildren<Camera>();
         fpvCam.GetComponent<FpvCameraEffects>().pilot = los.transform;
@@ -810,8 +869,10 @@ public static class SceneBuilder
         ao.intensity.Override(0.7f);
         ao.thicknessModifier.Override(1.3f);
         var bloom = Add<Bloom>();
-        bloom.intensity.Override(1.3f);
-        bloom.threshold.Override(0.9f);
+        // Restrained: at 1.3 / 0.9 the white spawn circle in direct sun bloomed into a pool of
+        // glare that swallowed the drone standing on it. Only real highlights should bloom now.
+        bloom.intensity.Override(0.55f);
+        bloom.threshold.Override(1.15f);
         bloom.softKnee.Override(0.6f);
         var cg = Add<ColorGrading>();
         cg.tonemapper.Override(Tonemapper.ACES);
@@ -939,25 +1000,29 @@ public static class SceneBuilder
                 }
         }
 
-        CrateTower(ox - 24f, oz + 36f, 3, 5);
-        CrateTower(ox + 24f, oz + 34f, 2, 6);
-        BarrelPyramid(ox, oz + 52f);
-        Wall(ox + 12f, oz + 46f, 20f);
-        Wall(ox - 10f, oz + 48f, -35f);
+        // Laid out in the yard's open middle: clear of the warehouses (z >= 106), the
+        // container stacks (x ~29) and the car lot (x +-6.5, z 78.5-85.5).
+        CrateTower(ox - 22f, oz + 30f, 3, 5);
+        CrateTower(ox - 20f, oz + 40f, 2, 6);
+        BarrelPyramid(ox + 16f, oz + 30f);
+        Wall(ox + 10f, oz + 40f, 20f);
+        Wall(ox - 14f, oz + 14f, -35f);
 
         // Target cars: parked in a real asphalt lot with painted bays, each marked with a
         // spinning orange diamond - the exact, unmistakable targets, easy to find and reach
         // right after take-off (the lot sits in the open centre of the gate loop).
         float lotCenterX = ox, lotCenterZ = oz + 22f;
-        BuildParkingLot(parent, terrain, lotCenterX, lotCenterZ);
+        // Cars must stand ON the slab: their wheels touch y = 0 locally, so spawning them at
+        // terrain height would bury the wheels 2 cm in the asphalt - the depenetration kick
+        // snaps the breakaway wheel joints and flips the car before the drill even starts.
+        float lotSurface = BuildParkingLot(parent, terrain, lotCenterX, lotCenterZ);
         var carColors = new[] { new Color(0.82f, 0.07f, 0.05f), new Color(0.08f, 0.32f, 0.82f), new Color(0.92f, 0.78f, 0.05f) };
         const int carWeight = 8; // each target car counts as several crates towards the demolition score
         for (int i = 0; i < 3; i++)
         {
             float x = lotCenterX + (i - 1) * 4f;
             float z = lotCenterZ;
-            float g = GroundHeight(terrain, x, z);
-            var carBlock = CarBuilder.Build(parent, new Vector3(x, g, z), 180f, carColors[i], $"Target car {i + 1}");
+            var carBlock = CarBuilder.Build(parent, new Vector3(x, lotSurface + 0.01f, z), 180f, carColors[i], $"Target car {i + 1}");
             CarBuilder.AddTargetMarker(carBlock.transform);
             builtTargetCars.Add(carBlock);
             for (int k = 0; k < carWeight; k++) list.Add(carBlock);
@@ -967,11 +1032,11 @@ public static class SceneBuilder
         return list.ToArray();
     }
 
-    /// <summary>A small asphalt lot with 3 painted parking bays for the target cars.</summary>
-    static void BuildParkingLot(Transform parent, Terrain terrain, float centerX, float centerZ)
+    /// <summary>A small asphalt lot with 3 painted parking bays for the target cars. Returns the surface height cars must sit on.</summary>
+    static float BuildParkingLot(Transform parent, Terrain terrain, float centerX, float centerZ)
     {
         var asphalt = GeneratedAssets.PbrMaterial("Asphalt", "asphalt_pit_lane", 1f, 0.9f);
-        var paint = Mat("PaintWhite", new Color(0.9f, 0.9f, 0.88f), glossiness: 0.3f);
+        var paint = Mat("PaintWhite", new Color(0.72f, 0.72f, 0.7f), glossiness: 0.25f);
 
         const float lotWidth = 13f, lotDepth = 7f;
         float g = GroundHeight(terrain, centerX, centerZ);
@@ -986,6 +1051,7 @@ public static class SceneBuilder
         // Outer boundary lines.
         foreach (var x in new[] { -6f, 6f })
             Primitive(PrimitiveType.Cube, "Bound line", parent, new Vector3(centerX + x, g + 0.025f, centerZ), new Vector3(0.08f, 0.002f, lotDepth - 0.6f), paint, collider: false);
+        return g + 0.02f; // top face of the 0.1 m slab centred at g - 0.03
     }
 
     static Balloon[] BuildBalloons(Transform root, Terrain terrain, float ox, float oz)
@@ -1000,8 +1066,14 @@ public static class SceneBuilder
         var list = new List<Balloon>();
         for (int i = 0; i < 14; i++)
         {
-            float x = ox - 26f + (float)rng.NextDouble() * 52f;
-            float z = oz + 10f + (float)rng.NextDouble() * 34f;
+            float x, z;
+            int guard = 0;
+            do
+            {
+                x = ox - 24f + (float)rng.NextDouble() * 48f;
+                z = oz + 10f + (float)rng.NextDouble() * 32f;
+            }
+            while (guard++ < 30 && Mathf.Abs(x - ox) < 9f && z > oz + 16f && z < oz + 28f); // keep off the car lot
             float h = 1.5f + (float)rng.NextDouble() * 9f;
             float ground = GroundHeight(terrain, x, z);
             var go = new GameObject($"Balloon {i + 1}");
@@ -1030,7 +1102,7 @@ public static class SceneBuilder
         parent.SetParent(root);
         var white = Mat("TargetWhite", new Color(0.95f, 0.95f, 0.92f), glossiness: 0.15f);
         var red = Mat("TargetRed", new Color(0.9f, 0.12f, 0.08f), glossiness: 0.15f);
-        var positions = new[] { new Vector3(ox - 16f, 0f, oz + 28f), new Vector3(ox + 14f, 0f, oz + 26f), new Vector3(ox - 20f, 0f, oz + 46f) };
+        var positions = new[] { new Vector3(ox - 18f, 0f, oz + 16f), new Vector3(ox + 16f, 0f, oz + 18f), new Vector3(ox, 0f, oz + 40f) };
         var list = new List<Transform>();
         foreach (var p in positions)
         {
@@ -1059,11 +1131,12 @@ public static class SceneBuilder
         zone.SetActive(false);
 
         var padMat = Mat("LandingPad", new Color(1f, 0.42f, 0.05f), glossiness: 0.3f);
-        var paint = Mat("PaintWhite", new Color(0.9f, 0.9f, 0.88f), glossiness: 0.3f);
-        var pad = Primitive(PrimitiveType.Cylinder, "LandingPad", root, new Vector3(8f, 0.024f, 1f), new Vector3(2.2f, 0.002f, 2.2f), padMat, collider: false);
-        Primitive(PrimitiveType.Cube, "H1", pad.transform, new Vector3(-0.22f, 1f, 0f), new Vector3(0.08f, 1.2f, 0.5f), paint, collider: false);
-        Primitive(PrimitiveType.Cube, "H2", pad.transform, new Vector3(0.22f, 1f, 0f), new Vector3(0.08f, 1.2f, 0.5f), paint, collider: false);
-        Primitive(PrimitiveType.Cube, "H3", pad.transform, new Vector3(0f, 1f, 0f), new Vector3(0.36f, 1.2f, 0.08f), paint, collider: false);
+        var paint = Mat("PaintWhite", new Color(0.72f, 0.72f, 0.7f), glossiness: 0.25f);
+        // Flat painted pad + H, laid on the asphalt (a scaled cylinder here showed a faceted lip).
+        var pad = PaintDisc("LandingPad", root, padMat, new Vector3(8f, 0.02f, 1f), 1.1f);
+        Primitive(PrimitiveType.Cube, "H1", pad.transform, new Vector3(-0.24f, 0.0012f, 0f), new Vector3(0.09f, 0.0016f, 0.55f), paint, collider: false);
+        Primitive(PrimitiveType.Cube, "H2", pad.transform, new Vector3(0.24f, 0.0012f, 0f), new Vector3(0.09f, 0.0016f, 0.55f), paint, collider: false);
+        Primitive(PrimitiveType.Cube, "H3", pad.transform, new Vector3(0f, 0.0012f, 0f), new Vector3(0.39f, 0.0016f, 0.09f), paint, collider: false);
         c.pad = pad.transform;
 
         // Venues: race track (east), freestyle park (west), demolition yard (north)
@@ -1246,9 +1319,164 @@ public static class SceneBuilder
 
         // Agent
         var a1 = Drill<AutopilotAgentLesson>("A1 Agent", "Agent", "Autopilot agent",
-            "The drone flies the mission by itself: take-off, the gate loop at 4 m, return and land. Watch from any camera (C). Move the sticks to take over; Backspace restarts the agent.", FlightMode.Angle, 120f);
+            "The drone flies the mission by itself: take-off, the gate loop at 6 m, return and land. Watch from any camera (C). Move the sticks to take over; Backspace restarts the agent.", FlightMode.Angle, 120f);
         a1.gates = course.gates;
-        a1.altitude = 4f;
+        a1.altitude = 6f; // gate tops are at 3.1 m; 4 m left no margin for the sag while banking
+
+        // ---- Student briefings: goal, numbered steps, the skill, the usual mistake, the keys ----
+        void Brief(Lesson l, int difficulty, string goal, string skill, string tip, string controls, params string[] steps)
+        {
+            l.difficulty = difficulty;
+            l.goal = goal;
+            l.skill = skill;
+            l.tip = tip;
+            l.controls = controls;
+            l.steps = steps;
+        }
+
+        Brief(b1, 1, "Lift off, then keep the drone inside the yellow box for 10 seconds.",
+            "Throttle control - holding a steady height is the first thing every pilot must own.",
+            "Students push the throttle too far and shoot past the box. Move it a little, then wait a moment to see the result.",
+            "W / S = throttle (up / down),   arrow keys = tilt,   SPACE = arm",
+            "Throttle at the bottom, then press SPACE to arm. The props spin slowly.",
+            "Raise the throttle gently with W until the drone leaves the ground, at about 35%.",
+            "Nudge the arrow keys to slide across into the yellow box.",
+            "Hold it inside for 10 seconds, correcting early with tiny inputs.");
+
+        Brief(b2, 1, "Climb above 3 m, then land softly on the orange H pad and stay still for 2 seconds.",
+            "Controlled descent and a soft touch-down - the part of every flight that breaks props.",
+            "Cutting the throttle to zero over the pad drops the drone. Sink slowly, under 2 m/s, and keep a little throttle right to the ground.",
+            "W / S = throttle,   arrow keys = tilt,   SPACE = arm",
+            "Arm and climb above 3 m.",
+            "Fly over the orange H pad with small arrow-key nudges.",
+            "Lower the throttle slightly and let it sink slowly - slower than 2 m/s.",
+            "Touch down and hold still for 2 seconds.");
+
+        Brief(b3, 2, "Fly 2 full circles around the striped pylon, staying 3-8 m from it and above 1 m.",
+            "Coordinating yaw with roll - the turn that lets you follow a subject or a track.",
+            "Rolling alone makes you drift away from the pylon. Add a little yaw all the way round so the nose keeps pointing at it.",
+            "A / D = yaw (turn),   arrow keys = tilt,   W / S = throttle",
+            "Arm, climb to about 3 m and fly out to one side of the pylon.",
+            "Roll gently to start moving sideways around it.",
+            "At the same time hold a little yaw so the nose stays on the pylon.",
+            "Keep the distance between 3 and 8 m for two full laps.");
+
+        Brief(r1, 2, "Fly through all 8 gates in order. The next gate glows green.",
+            "Reading a course and lining up on a target - aim at the gate before you reach it.",
+            "Turning at the last moment clips the posts. Point the nose at the next gate while you are still far away.",
+            "arrow keys = tilt,   A / D = yaw,   W / S = throttle",
+            "Arm and climb to gate height, about 2 m.",
+            "Find the gate glowing green - that is your next one.",
+            "Yaw to point at it, then tilt forward to fly through the middle.",
+            "Straight after passing, turn towards the next one.");
+
+        Brief(r2, 4, "Fly two laps of the same course in ACRO, where the drone does not level itself.",
+            "Flying without self-levelling - the mode real freestyle and race pilots use.",
+            "In ACRO the drone keeps whatever tilt you give it. After every input return the stick to centre and level the drone yourself.",
+            "M = switch mode,   arrow keys = tilt,   A / D = yaw,   W / S = throttle",
+            "Press M until the top-left corner reads ACRO.",
+            "Arm and lift off with small inputs - it will drift, that is normal.",
+            "Tap the arrows instead of holding them, and level out after each tap.",
+            "Complete two laps of the gates.");
+
+        Brief(r3, 4, "Wait for the 3-2-1-GO countdown, then fly three timed laps.",
+            "Racing under pressure and starting cleanly - your best lap is saved as a record.",
+            "Crossing a gate before GO is a false start and restarts the countdown. Hold your position until you see GO.",
+            "arrow keys = tilt,   A / D = yaw,   W / S = throttle",
+            "Arm and hover behind the start arch.",
+            "Wait for GO - do not cross a gate early.",
+            "Fly three laps, carrying your speed through the gates.",
+            "Brake by tilting back, not by cutting the throttle.");
+
+        Brief(r4, 5, "Beat 22 seconds on a single lap. You get two laps to try.",
+            "Flying a racing line: wide entry, tight exit, no wasted movement.",
+            "Full throttle everywhere is slower. Ease off before a turn and add it again as you come out.",
+            "M = mode,   arrow keys = tilt,   A / D = yaw,   W / S = throttle",
+            "Wait for GO, then build speed along the straight.",
+            "Enter each turn from the outside and cut close to the inside gate.",
+            "Keep the drone smooth - every wobble costs time.",
+            "The better of your two laps counts.");
+
+        Brief(f1, 4, "In ACRO, above 6 m, do three full rolls.",
+            "Throwing and catching a roll - the basic freestyle move.",
+            "Students catch it too late and lose height. Add throttle first, then centre the stick the moment the drone is level again.",
+            "M = mode,   left / right arrows = roll,   W / S = throttle",
+            "Press M for ACRO and climb above 6 m.",
+            "Add a little throttle to gain height before you start.",
+            "Push the roll stick fully to one side and hold it.",
+            "The instant the drone is level again, centre the stick and add throttle.");
+
+        Brief(f2, 4, "In ACRO, above 6 m, do three full flips.",
+            "The flip - the same catch as a roll, but around the other axis and with more height loss.",
+            "A flip drops you further than a roll. Start higher than you think you need and punch the throttle just before you begin.",
+            "M = mode,   up / down arrows = pitch,   W / S = throttle",
+            "ACRO mode, climb above 6 m.",
+            "Punch the throttle for a moment to gain height.",
+            "Push the pitch stick fully forward or back and hold it.",
+            "Catch it level, centre the stick, add throttle.");
+
+        Brief(f3, 5, "Do two power loops: dive for speed, then loop up and over the top.",
+            "Trading height for speed and back again - the core of freestyle flying.",
+            "Without enough speed at the bottom you will stall on your back at the top. Dive first, then pull.",
+            "M = mode,   up / down arrows = pitch,   W / S = throttle",
+            "ACRO, climb high and dive to build speed.",
+            "Pull back steadily and keep pulling over the top.",
+            "You must gain 2.5 m or more at the highest point.",
+            "Complete the circle and fly out level.");
+
+        Brief(d1, 2, "Fly through all 14 balloons tied around the yard.",
+            "Planning an efficient route and hitting a small target in three dimensions.",
+            "Chasing balloons one at a time wastes the clock. Look ahead and link them into a route.",
+            "arrow keys = tilt,   A / D = yaw,   W / S = throttle",
+            "Arm and take off from the pad.",
+            "Pick the nearest group of balloons, not just the nearest balloon.",
+            "Fly through each one - touching it pops it.",
+            "Keep moving: your time is scored.");
+
+        Brief(d2, 3, "Drop water balloons onto the three bullseyes. You carry 6.",
+            "Leading a target - a released load keeps your speed and falls behind you.",
+            "Pressing F right over the target always overshoots. Release before you get there, or slow down first.",
+            "F = release a balloon,   arrow keys = tilt,   W / S = throttle",
+            "Arm and take off - the balloons make the drone heavier.",
+            "Fly over a bullseye at a steady height.",
+            "Press F slightly BEFORE you are above the centre.",
+            "Watch where it lands and correct the next drop. 10 / 5 / 2 points by ring.");
+
+        Brief(d3, 2, "Fly into the RED car only. You have 3 drones.",
+            "Committing to a chosen target and hitting it accurately.",
+            "Hitting anything else wastes a drone. Identify the red car by its spinning orange marker before you accelerate.",
+            "arrow keys = tilt,   A / D = yaw,   W / S = throttle",
+            "Arm and climb a few metres.",
+            "Find the RED car - the one with the spinning orange marker.",
+            "Line up on it from a distance and fly straight in.",
+            "Fewer drones used = more stars.");
+
+        Brief(d4, 3, "Hit the BLUE car at 12 m/s or faster. You have 3 drones.",
+            "Building and holding speed on an approach, and reading your own speed display.",
+            "Lifting the nose just before impact kills your speed. Stay low, stay committed, and watch SPD in the top-left corner.",
+            "arrow keys = tilt,   W / S = throttle,   SPD shows your speed",
+            "Arm and fly well away from the car to make room.",
+            "Turn back and accelerate along a long straight line.",
+            "Keep the SPD readout above 12 m/s.",
+            "Hold that line into the blue car without flaring.");
+
+        Brief(d5, 4, "Demolish 60% of the yard using 5 drones.",
+            "Choosing the target that gives the most result - the same judgement as picking a landing spot.",
+            "One drone into one crate is wasted. Aim at the base of a tall stack so the whole thing comes down.",
+            "arrow keys = tilt,   A / D = yaw,   W / S = throttle",
+            "Look over the yard: cars, crate towers, barrel pyramids and walls.",
+            "Pick the target where a single hit topples the most.",
+            "Hit it low, at the base, with speed.",
+            "Repeat with your remaining drones until you pass 60%.");
+
+        Brief(a1, 1, "Watch the drone fly the whole mission by itself, then take over whenever you like.",
+            "What a smooth, correct flight looks like - copy the heights, speeds and turns you see.",
+            "Do not just watch the drone move. Watch where it slows down and how wide it turns, then fly the same line yourself.",
+            "C = change camera,   move any stick = take over,   Backspace = restart the agent",
+            "Start the drill - the drone arms and takes off on its own.",
+            "Press C to watch from the chase, pilot and FPV cameras.",
+            "Move a stick at any time to take control.",
+            "Press Backspace to hand the mission back to the agent.");
 
         // Venues: each discipline starts at its own spawn point
         foreach (var l in new Lesson[] { r1, r2, r3, r4, a1 }) { l.spawn = course.spawnRace; l.venue = "Race track"; }
@@ -1291,11 +1519,26 @@ public static class SceneBuilder
         menu.cameras = switcher;
         menu.showcaseCamera = cams[3];
         menu.input = input;
-        menu.drone = physics;
         menu.flightController = fc;
-        menu.crashDetector = crash;
         menu.osd = osd;
         osd.menu = menu;
+
+        // Per-venue weather / time of day
+        var atmo = trainer.AddComponent<VenueAtmosphere>();
+        atmo.sun = GameObject.Find("Directional Light")?.GetComponent<Light>();
+        atmo.sky = RenderSettings.skybox;
+        atmo.presets = new[]
+        {
+            new VenueAtmosphere.Preset { venue = "Pit field", sunEuler = new Vector3(52f, -58f, 0f), sunColor = new Color(1f, 0.96f, 0.9f),
+                sunIntensity = 1.6f, ambient = 1f, fogColor = new Color(0.72f, 0.78f, 0.86f), fogDensity = 0.0012f, skyExposure = 1f, skyRotation = 0f, skyTint = Color.white },
+            new VenueAtmosphere.Preset { venue = "Race track", sunEuler = new Vector3(22f, -120f, 0f), sunColor = new Color(1f, 0.87f, 0.68f),
+                sunIntensity = 1.45f, ambient = 0.95f, fogColor = new Color(0.84f, 0.77f, 0.63f), fogDensity = 0.0022f, skyExposure = 1f, skyRotation = 120f, skyTint = new Color(1f, 0.93f, 0.8f) },
+            new VenueAtmosphere.Preset { venue = "Freestyle park", sunEuler = new Vector3(64f, 40f, 0f), sunColor = new Color(0.86f, 0.89f, 0.95f),
+                sunIntensity = 0.95f, ambient = 0.85f, fogColor = new Color(0.6f, 0.63f, 0.69f), fogDensity = 0.0028f, skyExposure = 0.8f, skyRotation = 210f, skyTint = new Color(0.82f, 0.85f, 0.92f) },
+            new VenueAtmosphere.Preset { venue = "Demolition yard", sunEuler = new Vector3(13f, 155f, 0f), sunColor = new Color(1f, 0.72f, 0.45f),
+                sunIntensity = 1.35f, ambient = 0.85f, fogColor = new Color(0.7f, 0.57f, 0.45f), fogDensity = 0.003f, skyExposure = 0.9f, skyRotation = 300f, skyTint = new Color(1f, 0.85f, 0.7f) },
+        };
+        manager.atmosphere = atmo;
 
         var remote = trainer.AddComponent<DevRemote>();
         remote.drone = physics;
@@ -1317,6 +1560,33 @@ public static class SceneBuilder
         go.AddComponent<MeshFilter>().sharedMesh = mesh;
         go.AddComponent<MeshRenderer>().sharedMaterial = mat;
         return go;
+    }
+    /// <summary>
+    /// Flat painted disc laid on a surface, built with the same Extrude path as the asphalt pads
+    /// (smooth 72-gon, 1.5 mm thick). A scaled primitive cylinder stood several mm proud of the
+    /// ground and its faceted lip cut across the drone's arms from a low angle.
+    /// </summary>
+    public static GameObject PaintDisc(string name, Transform parent, Material mat, Vector3 centreOnSurface, float radius, float lift = 0.0015f)
+    {
+        // Reuse the asset if it already exists: GeneratedAssets.SaveMesh deletes and recreates the
+        // asset, so building a second marking of the same radius would pull the mesh out from under
+        // the first one and leave it with a dangling reference (an invisible ring).
+        string key = $"PaintDisc_{radius:0.000}";
+        var mesh = AssetDatabase.LoadAssetAtPath<Mesh>($"{GeneratedAssets.Dir}/Meshes/{key}.asset");
+        if (mesh == null) mesh = GeneratedAssets.SaveMesh(MeshBuilder.Extrude(MeshBuilder.Circle(radius, 72), 0.0015f, key, 1.5f), key);
+        var go = MeshObject(name, parent, mesh, mat, centreOnSurface + new Vector3(0f, lift, 0f));
+        go.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+        go.isStatic = true;
+        return go;
+    }
+
+    /// <summary>Painted ring flush with the ground: a paint disc with the ground material laid back
+    /// over its middle, 0.6 mm higher - close enough that no lip is visible from any angle.</summary>
+    public static GameObject PaintRing(string name, Transform parent, Material paintMat, Material groundMat, Vector3 centreOnSurface, float rInner, float rOuter)
+    {
+        var ring = PaintDisc(name, parent, paintMat, centreOnSurface, rOuter);
+        PaintDisc(name + " inner", ring.transform.parent, groundMat, centreOnSurface, rInner, 0.0021f);
+        return ring;
     }
 
     public static GameObject Primitive(PrimitiveType type, string name, Transform parent, Vector3 localPos, Vector3 localScale, Material mat, bool collider = true)

@@ -13,7 +13,9 @@ public class LessonManager : MonoBehaviour
     public FlightController flightController;
     public CrashDetector crashDetector;
     public PilotInput input;
-    [Tooltip("Line-of-sight camera: moved next to each venue's spawn")]
+    [Tooltip("Per-venue weather / time of day")]
+    public VenueAtmosphere atmosphere;
+    [Tooltip("Line-of-sight camera: moved next to each venue spawn")]
     public Transform pilotCamera;
     Transform defaultSpawn;
     [Tooltip("Start on the first drill instead of free flight")]
@@ -94,7 +96,9 @@ public class LessonManager : MonoBehaviour
             if (input.RestartLessonPressed) RestartLesson();
             if (input.ResetPressed && crashDetector != null) crashDetector.Respawn();
             if (input.ScenarioKey == 0) { if (OnMenuRequested != null) OnMenuRequested(); else StartLesson(-1); }
-            else if (input.ScenarioKey > 0 && input.ScenarioKey - 1 < Disciplines.Count) StartDiscipline(input.ScenarioKey - 1);
+            // Digits jump straight into a discipline only when no front end is present;
+            // with the menu the player goes through it (so they get the briefing and the fade).
+            else if (!pauseHandledExternally && input.ScenarioKey > 0 && input.ScenarioKey - 1 < Disciplines.Count) StartDiscipline(input.ScenarioKey - 1);
         }
 
         if (!Paused && Current != null)
@@ -146,6 +150,7 @@ public class LessonManager : MonoBehaviour
             if (pilotCamera != null && sp != null) pilotCamera.position = sp.position + sp.rotation * new Vector3(3f, 1.7f, -8f);
             crashDetector.Respawn();
         }
+        if (atmosphere != null) atmosphere.Apply(Current != null ? Current.venue : "Pit field");
         if (Current != null && flightController != null) flightController.mode = Current.recommendedMode;
         Current?.Begin(drone, flightController, crashDetector);
     }

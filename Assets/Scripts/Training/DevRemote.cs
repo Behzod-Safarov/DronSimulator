@@ -12,6 +12,7 @@ using UnityEngine;
 ///   release                          (back to physical sticks)
 ///   wind speed | shot path.png | settings | log | refresh (hot-recompile)
 ///   drop | goto x y z (autopilot) | apradius r | balloons | targets | terrain | chase dist height
+///   menu [title] | nav <left|right|up|down|confirm|back|esc|f|l|0-9> | blocks (demolition state)
 /// </summary>
 public class DevRemote : MonoBehaviour
 {
@@ -65,6 +66,12 @@ public class DevRemote : MonoBehaviour
         }
     }
 
+    string ApState()
+    {
+        var ap = drone.GetComponent<Autopilot>();
+        return ap == null ? "-" : $"{ap.State}/{ap.Message}/ovr={PilotInput.OverrideActive}/thr={PilotInput.OverrideThrottle:0.00}";
+    }
+
     static float F(string s) => float.Parse(s, CultureInfo.InvariantCulture);
 
     void Exec(string line)
@@ -112,6 +119,31 @@ public class DevRemote : MonoBehaviour
                 ap.StartMission(new[] { pt }, pt.y);
                 break;
             }
+            case "bounds":
+            {
+                var col = drone.GetComponent<Collider>();
+                var rs = drone.GetComponentsInChildren<Renderer>();
+                var vis = new Bounds(drone.transform.position, Vector3.zero);
+                foreach (var rr in rs) if (rr.enabled && !(rr is ParticleSystemRenderer)) vis.Encapsulate(rr.bounds);
+                string hitText = "none";
+                if (Physics.Raycast(drone.transform.position + Vector3.up * 2f, Vector3.down, out var hit, 10f, ~0, QueryTriggerInteraction.Ignore))
+                    hitText = $"{hit.collider.name} y={hit.point.y:0.0000}";
+                Debug.Log($"[DevRemote] root y={drone.transform.position.y:0.0000}  collider min y={col.bounds.min.y:0.0000}  visual min y={vis.min.y:0.0000}  surface under: {hitText}");
+                break;
+            }
+            case "blocks":
+            {
+                var dl = lessons.Current as DemolitionLesson;
+                if (dl == null) { Debug.Log("[DevRemote] current drill is not a demolition drill"); break; }
+                int shown = 0;
+                foreach (var b in dl.blocks)
+                {
+                    if (!b.IsToppled || shown++ > 12) continue;
+                    Debug.Log($"[DevRemote] toppled {b.name} at {b.transform.position} drift={b.Drift:0.00} m tilt={b.Tilt:0} deg");
+                }
+                Debug.Log($"[DevRemote] blocks={dl.blocks.Length} toppled={dl.Toppled}");
+                break;
+            }
             case "targets":
             {
                 var l = FindFirstObjectByType<WaterBalloonDropLesson>();
@@ -149,7 +181,7 @@ public class DevRemote : MonoBehaviour
             case "log":
             {
                 Vector3 pos = drone.transform.position;
-                Debug.Log($"[DevRemote] alt={pos.y:0.00} pos=({pos.x:0.0},{pos.z:0.0}) v={drone.Body.GetVelocity().magnitude:0.00} armed={flightController.Armed} mode={flightController.mode} cam={cameras.CurrentName} bat={drone.BatteryVolts:0.0}V crashed={crashDetector.Crashed} agl={drone.HeightAboveGround:0.00} lesson={(lessons.Current != null ? lessons.Current.title + " | " + lessons.Current.Status : "free")}");
+                Debug.Log($"[DevRemote] alt={pos.y:0.00} pos=({pos.x:0.0},{pos.z:0.0}) v={drone.Body.GetVelocity().magnitude:0.00} armed={flightController.Armed} mode={flightController.mode} cam={cameras.CurrentName} bat={drone.BatteryVolts:0.0}V crashed={crashDetector.Crashed} ts={Time.timeScale:0.0} ap={ApState()} menu={(menu != null ? menu.Current.ToString() : "-")} agl={drone.HeightAboveGround:0.00} lesson={(lessons.Current != null ? lessons.Current.title + " | " + lessons.Current.Status : "free")}");
                 break;
             }
             default: Debug.LogWarning($"[DevRemote] unknown command '{line}'"); break;

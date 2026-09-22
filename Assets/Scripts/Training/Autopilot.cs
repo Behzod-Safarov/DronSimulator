@@ -39,6 +39,7 @@ public class Autopilot : MonoBehaviour
     Vector3 home;
     float cruiseAlt;
     float takeoverThrottleRef;
+    bool takeoverRefPending;
     float altIntegral;
     float landTimer;
     Vector3 windIntegral;   // steady-state lean into the wind
@@ -56,7 +57,10 @@ public class Autopilot : MonoBehaviour
         windIntegral = Vector3.zero;
         nearTimer = 0f;
         fc.mode = FlightMode.Angle;
-        takeoverThrottleRef = input.PhysicalRaw.z;
+        // PhysicalRaw is a frame behind here (the drill respawns the drone and zeroes the
+        // keyboard throttle in this same frame), so sample the reference next Update -
+        // comparing against a stale in-flight value reads as "pilot took over" at once.
+        takeoverRefPending = true;
         PilotInput.OverrideActive = true;
         PilotInput.OverrideRoll = PilotInput.OverridePitch = PilotInput.OverrideYaw = 0f;
         PilotInput.OverrideThrottle = 0f;
@@ -84,6 +88,7 @@ public class Autopilot : MonoBehaviour
     {
         if (!Engaged || input == null) return;
         var p = input.PhysicalRaw;
+        if (takeoverRefPending) { takeoverThrottleRef = p.z; takeoverRefPending = false; return; }
         bool sticks = Mathf.Abs(p.x) > 0.35f || Mathf.Abs(p.y) > 0.35f || Mathf.Abs(p.w) > 0.35f || Mathf.Abs(p.z - takeoverThrottleRef) > 0.2f;
         if (sticks) Abort("Manual - pilot took over");
     }

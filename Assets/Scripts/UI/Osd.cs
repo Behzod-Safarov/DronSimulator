@@ -21,6 +21,7 @@ public class Osd : MonoBehaviour
     GUIStyle text, big, box, small, header;
     readonly StringBuilder sb = new StringBuilder();
     bool settingsOpen;
+    bool closeSettingsRequested;
     bool pausedBySettings;
     public bool SettingsOpen => settingsOpen;
     StickCalibrator calibrator;
@@ -43,6 +44,9 @@ public class Osd : MonoBehaviour
         if (input == null) return;
         if (input.DebugTogglePressed) showAxisDebug = !showAxisDebug;
         if (input.SettingsPressed) ToggleSettings();
+        // Esc closes the settings page too - Tab alone was not discoverable
+        if (settingsOpen && input.PausePressed) ToggleSettings();
+        if (closeSettingsRequested) { closeSettingsRequested = false; ToggleSettings(); }
         if (settingsOpen) calibrator.Update();
     }
 
@@ -136,7 +140,7 @@ public class Osd : MonoBehaviour
                 int pos = disc != null ? disc.lessons.IndexOf(lessons.CurrentIndex) + 1 : 0;
                 string best = new string('\u2605', l.BestStars).PadRight(3, '\u2606');
                 sb.AppendLine($"<b>{Loc.T(l.discipline)} - {l.DisplayTitle}</b>   <size={small.fontSize}>{Loc.T("drill")} {pos}/{disc?.lessons.Count}   {Loc.T("best")} {best}   ({l.recommendedMode})</size>");
-                sb.AppendLine(l.DisplayInstructions);
+                sb.AppendLine(string.IsNullOrEmpty(l.goal) ? l.DisplayInstructions : l.DisplayGoal);
                 sb.AppendLine();
                 sb.AppendLine(l.Completed
                     ? $"<color=#7CFC00><b>{Loc.S(l.Status)}</b></color>   {Loc.T("Score")} {l.Score} / 100   {new string('\u2605', l.Stars).PadRight(3, '\u2606')}"
@@ -260,29 +264,36 @@ public class Osd : MonoBehaviour
     {
         float pw = Mathf.Min(620f, w - 40f), ph = Mathf.Min(h - 40f, line * 34f);
         var r = new Rect((w - pw) * 0.5f, (h - ph) * 0.5f, pw, ph);
-        GUI.color = new Color(0.05f, 0.05f, 0.07f, 0.92f);
-        GUI.Box(r, GUIContent.none, box);
+        // Solid panel: the old translucent box let the scene show through and the text was
+        // barely readable, which matters most on the page students actually have to read.
+        GUI.color = new Color(0.04f, 0.05f, 0.07f, 0.985f);
+        GUI.DrawTexture(r, dot, ScaleMode.StretchToFill, true, 0f, GUI.color, 0f, 10f);
+        GUI.color = new Color(1f, 1f, 1f, 0.22f);
+        GUI.DrawTexture(r, dot, ScaleMode.StretchToFill, true, 0f, GUI.color, 2f, 10f);
         GUI.color = Color.white;
 
         GUILayout.BeginArea(new Rect(r.x + 16, r.y + 10, r.width - 32, r.height - 20));
-        GUILayout.Label("<b>SETTINGS</b>   (Tab to close - changes are saved)", header);
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("<b>" + Loc.T("SETTINGS") + "</b>   <size=" + small.fontSize + ">" + Loc.T("changes are saved automatically") + "</size>", header);
+        if (GUILayout.Button("←  " + Loc.T("Close") + "  (Tab)", GUILayout.Width(line * 9f), GUILayout.Height(line * 1.5f))) closeSettingsRequested = true;
+        GUILayout.EndHorizontal();
         scroll = GUILayout.BeginScrollView(scroll);
 
-        GUILayout.Label("<b>Transmitter / input</b>", header);
-        GUILayout.Label($"Detected: {input.Source}   joystick={(input.HasJoystick ? "yes" : "no")}  gamepad={(input.HasGamepad ? "yes" : "no")}", small);
+        GUILayout.Label("<b>" + Loc.T("Transmitter / input") + "</b>", header);
+        GUILayout.Label(Loc.F("Detected: {0}   joystick={1}  gamepad={2}", input.Source, Loc.T(input.HasJoystick ? "yes" : "no"), Loc.T(input.HasGamepad ? "yes" : "no")), small);
         GUILayout.BeginHorizontal();
-        if (!calibrator.Active && GUILayout.Button("Calibrate transmitter sticks", GUILayout.Height(line * 1.4f))) calibrator.Start();
-        if (calibrator.Active && GUILayout.Button("Cancel", GUILayout.Height(line * 1.4f))) calibrator.Cancel();
+        if (!calibrator.Active && GUILayout.Button(Loc.T("Calibrate transmitter sticks"), GUILayout.Height(line * 1.4f))) calibrator.Start();
+        if (calibrator.Active && GUILayout.Button(Loc.T("Cancel"), GUILayout.Height(line * 1.4f))) calibrator.Cancel();
         GUILayout.EndHorizontal();
         if (!string.IsNullOrEmpty(calibrator.Message))
             GUILayout.Label($"<color=#FFD24D>{calibrator.Message}</color>", text);
         for (int i = 0; i < 4; i++)
             GUILayout.Label($"  {(PilotInput.Channel)i,-9} axis {input.joyAxis[i]}{(input.joyInvert[i] ? " inverted" : "")}", small);
         input.deadband = Slider("Deadband", input.deadband, 0f, 0.15f, "0.00");
-        input.springThrottle = GUILayout.Toggle(input.springThrottle, " Gamepad: throttle stick centre = 50%");
+        input.springThrottle = GUILayout.Toggle(input.springThrottle, " " + Loc.T("Gamepad: throttle stick centre = 50%"));
 
         GUILayout.Space(8);
-        GUILayout.Label("<b>Rates (Betaflight Actual Rates)</b>", header);
+        GUILayout.Label("<b>" + Loc.T("Rates (Betaflight Actual Rates)") + "</b>", header);
         flightController.rollRates.centerSensitivity = flightController.pitchRates.centerSensitivity =
             Slider("Roll/Pitch centre sensitivity (deg/s)", flightController.rollRates.centerSensitivity, 20f, 200f, "0");
         flightController.rollRates.maxRate = flightController.pitchRates.maxRate =
@@ -295,11 +306,11 @@ public class Osd : MonoBehaviour
         flightController.angleLimitDeg = Slider("Angle mode max tilt (deg)", flightController.angleLimitDeg, 20f, 80f, "0");
 
         GUILayout.Space(8);
-        GUILayout.Label("<b>Flight</b>", header);
-        flightController.beginnerThrottleAssist = GUILayout.Toggle(flightController.beginnerThrottleAssist, " Beginner throttle assist (stick centre = hover; NOT realistic)");
-        flightController.airMode = GUILayout.Toggle(flightController.airMode, " Air mode");
-        drone.infiniteBattery = GUILayout.Toggle(drone.infiniteBattery, " Infinite battery");
-        drone.groundEffect = GUILayout.Toggle(drone.groundEffect, " Ground effect");
+        GUILayout.Label("<b>" + Loc.T("Flight") + "</b>", header);
+        flightController.beginnerThrottleAssist = GUILayout.Toggle(flightController.beginnerThrottleAssist, " " + Loc.T("Beginner throttle assist (stick centre = hover; NOT realistic)"));
+        flightController.airMode = GUILayout.Toggle(flightController.airMode, " " + Loc.T("Air mode"));
+        drone.infiniteBattery = GUILayout.Toggle(drone.infiniteBattery, " " + Loc.T("Infinite battery"));
+        drone.groundEffect = GUILayout.Toggle(drone.groundEffect, " " + Loc.T("Ground effect"));
         if (wind != null)
         {
             wind.meanSpeed = Slider("Wind speed (m/s)", wind.meanSpeed, 0f, 12f, "0.0");
@@ -308,10 +319,10 @@ public class Osd : MonoBehaviour
         }
 
         GUILayout.Space(8);
-        GUILayout.Label("<b>FPV camera</b>", header);
+        GUILayout.Label("<b>" + Loc.T("FPV camera") + "</b>", header);
         if (fpvFx != null)
         {
-            fpvFx.analogLook = GUILayout.Toggle(fpvFx.analogLook, " Analog video look (noise, breakup by range)");
+            fpvFx.analogLook = GUILayout.Toggle(fpvFx.analogLook, " " + Loc.T("Analog video look (noise, breakup by range)"));
             fpvFx.latencyMs = Slider("Video latency (ms)", fpvFx.latencyMs, 0f, 120f, "0");
             fpvFx.distortion = Slider("Lens distortion", fpvFx.distortion, 0f, 0.8f, "0.00");
             fpvFx.effectiveVerticalFov = Slider("Camera FOV (vertical, deg)", fpvFx.effectiveVerticalFov, 60f, 120f, "0");
@@ -319,7 +330,7 @@ public class Osd : MonoBehaviour
         if (cameras != null)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label("View:", GUILayout.Width(60));
+            GUILayout.Label(Loc.T("View:"), GUILayout.Width(line * 3f));
             for (int i = 0; i < cameras.cameras.Length; i++)
                 if (GUILayout.Toggle(cameras.current == i, " " + cameras.names[i]) && cameras.current != i) cameras.Select(i);
             GUILayout.EndHorizontal();
@@ -333,9 +344,9 @@ public class Osd : MonoBehaviour
         GUILayout.EndHorizontal();
 
         GUILayout.Space(8);
-        GUILayout.Label("<b>Audio</b>", header);
+        GUILayout.Label("<b>" + Loc.T("Audio") + "</b>", header);
         AudioListener.volume = Slider("Master volume", AudioListener.volume, 0f, 1f, "0.00");
-        showSticks = GUILayout.Toggle(showSticks, " Show stick overlay");
+        showSticks = GUILayout.Toggle(showSticks, " " + Loc.T("Show stick overlay"));
 
         GUILayout.EndScrollView();
         GUILayout.EndArea();
@@ -344,7 +355,7 @@ public class Osd : MonoBehaviour
     float Slider(string label, float value, float min, float max, string fmt)
     {
         GUILayout.BeginHorizontal();
-        GUILayout.Label(label, small, GUILayout.Width(300));
+        GUILayout.Label(Loc.T(label), small, GUILayout.Width(text.fontSize * 14f));
         value = GUILayout.HorizontalSlider(value, min, max, GUILayout.MinWidth(120));
         GUILayout.Label(value.ToString(fmt), small, GUILayout.Width(60));
         GUILayout.EndHorizontal();

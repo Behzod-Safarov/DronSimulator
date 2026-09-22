@@ -111,12 +111,18 @@ and attempts are saved between sessions and shown on the cards.
 Each discipline has its own **venue** on the field ([VenueBuilder.cs](Assets/Editor/VenueBuilder.cs)); a drill
 spawns you (and the line-of-sight pilot) at its venue:
 
-| Venue | Where | What is there |
-|---|---|---|
-| **Pit field** | origin | asphalt pad, tent, safety net, hover box, H landing pad, orbit pylon |
-| **Race track** | 80 m east | gravel oval with 8 gates, start/finish arch with chequered banner, tyre walls, cones, flags, grandstand, timing tower |
-| **Freestyle park** | 80 m west | concrete slab with a 3-floor skeleton building to dive through, a window wall, two ramps, a row of pillars, stacked containers |
-| **Demolition yard** | 90 m north | fenced dirt yard with hazard-striped gate, jersey barriers, two warehouses, container stacks, floodlight masts, the target-car lot, crate towers, barrel pyramid, block walls, balloons and drop bullseyes |
+Each venue also sits in **its own biome** - different ground, vegetation, terrain shape and
+weather ([VenueBuilder.cs](Assets/Editor/VenueBuilder.cs), [VenueAtmosphere.cs](Assets/Scripts/World/VenueAtmosphere.cs)):
+
+| Venue | Where | Landscape | Light & air | What is there |
+|---|---|---|---|---|
+| **Pit field** | origin | green meadow: mown turf, detail grass, wooded clumps, farm buildings, hay bales, a pond | midday, clear, thin haze | asphalt pad, tent, safety net, hover box, H landing pad, orbit pylon |
+| **Race track** | 170 m east | desert plateau: sand, dunes, boulder fields, a mesa ridge of stacked slabs, dry scrub, no grass | low afternoon sun, warm dusty haze | gravel oval with 8 gates, start/finish arch with chequered banner, tyre walls, cones, flags, grandstand, timing tower |
+| **Freestyle park** | 170 m west | urban wasteland: stone/gravel ground, rubble mounds, nine derelict towers with window bands, lamp posts, no vegetation | overcast, cool grey, dim sun | concrete slab with a 3-floor skeleton building to dive through, a window wall, two ramps, a row of pillars, stacked containers |
+| **Demolition yard** | 185 m north | quarry basin: the yard is dug into terraced rock benches, boulders and conical spoil heaps | low evening sun, thick dust | fenced dirt yard with hazard-striped gate, jersey barriers, two warehouses, container stacks, floodlight masts, the target-car lot, crate towers, barrel pyramid, block walls, balloons and drop bullseyes |
+
+Starting a drill eases the sun angle/colour/intensity, ambient level, fog and sky exposure to that
+venue preset, so each discipline has its own time of day as well as its own ground.
 
 | # | Discipline | Drills |
 |---|---|---|
@@ -126,8 +132,22 @@ spawns you (and the line-of-sight pilot) at its venue:
 | 4 | **Demolition** (kamikaze game) | Balloon pop · Water-balloon drop · Hit the marked car (only the red car counts; fewer drones = more stars) · Speed hit (hit the blue car at ≥ 12 m/s) · Kamikaze demolition (60 % of everything with 5 drones) |
 | 5 | **Agent** | Autopilot agent: the drone flies the loop itself; touch the sticks to take over |
 
+### Every drill is briefed for a student
+Selecting a drill shows a teaching card, not just a sentence ([MainMenu.cs](Assets/Scripts/UI/MainMenu.cs)):
+
+- **Goal** - one line stating what must be achieved
+- **Numbered steps** - the 4 actions to take, in order
+- **You learn** - the skill it builds and why it matters on a real quad
+- **Watch out** - the mistake students actually make here
+- **Controls** - only the keys this drill needs
+- **Difficulty** 1-5, plus the scoring rule and your best result
+
+The goal is repeated on the launch screen and in the in-flight panel, so the student always
+knows the task without leaving the air. All of it is translated (Uzbek by default).
+
 Add a drill by deriving from `Lesson` and adding it under `Trainer/Lessons` with a `discipline`
-name (see `SceneBuilder.BuildTrainer`); consecutive drills with the same name form a discipline.
+name and a `Brief(...)` call (see `SceneBuilder.BuildTrainer`); consecutive drills with the same
+name form a discipline.
 
 ### Consequences (realism that trains)
 - **Prop strikes**: an impact between 2.4 and 5 m/s (clipping a gate, a hard landing) breaks one prop
@@ -150,8 +170,10 @@ If it wobbles, lower the rate PID `p`/`d`; if it feels mushy, raise `p`. A docil
 
 - `Unity.exe -projectPath <dir> -executeMethod SceneBuilder.BuildAndPlay -droneSelfTest`
   rebuilds the scene, enters Play mode and flies a scripted sequence, logging `[SelfTest] PASS/FAIL`.
-- `-droneRemote <cmd.txt>` lets a script drive the sim (camera, sticks, screenshots) — see
-  [DevRemote.cs](Assets/Scripts/Training/DevRemote.cs).
+- `-droneRemote <cmd.txt>` lets a script drive the sim - see [DevRemote.cs](Assets/Scripts/Training/DevRemote.cs).
+  Commands include `camera`, `sticks`, `shot`, `lesson N`, `menu`, `nav <key>`, `goto x y z`,
+  `blocks` (demolition block state) and `log`, whose line carries altitude, arming, `ts=`
+  (time scale), `ap=` (autopilot phase) and `menu=` (front-end state).
 
 ## 7. Project layout
 

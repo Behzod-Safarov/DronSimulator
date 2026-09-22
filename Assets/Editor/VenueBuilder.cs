@@ -13,9 +13,12 @@ using UnityEngine.Rendering;
 /// </summary>
 public static class VenueBuilder
 {
-    public static readonly Vector2 Race = new Vector2(80f, 26f);
-    public static readonly Vector2 Park = new Vector2(-80f, 26f);
-    public static readonly Vector2 Yard = new Vector2(0f, 92f);
+    // Far enough apart that each biome (radius BiomeR) owns its own ground, vegetation and
+    // horizon: at the old 80-90 m spacing the desert and urban masks bled over the pit and
+    // left the meadow at 6 percent.
+    public static readonly Vector2 Race = new Vector2(170f, 40f);
+    public static readonly Vector2 Park = new Vector2(-170f, 40f);
+    public static readonly Vector2 Yard = new Vector2(0f, 185f);
     public const float RaceRx = 24f, RaceRz = 14f;
     public const float ParkW = 46f, ParkD = 38f;
     public const float YardW = 66f, YardD = 56f;
@@ -70,6 +73,75 @@ public static class VenueBuilder
         return false;
     }
 
+
+    // ==================================================================== landscapes
+    // Each venue sits in its own biome: meadow (pit), desert plateau (race), urban
+    // wasteland (park) and quarry basin (yard). These masks drive the terrain height,
+    // the ground textures, the detail grass and where trees may grow.
+
+    public const float BiomeR = 105f;   // radius of a biome around its venue centre
+
+    static float Falloff(float x, float z, Vector2 c, float r, float edge)
+    {
+        float d = Vector2.Distance(new Vector2(x, z), c);
+        return 1f - Mathf.Clamp01((d - (r - edge)) / edge);
+    }
+
+    /// <summary>Desert plateau around the race track.</summary>
+    public static float Desert(float x, float z) => Falloff(x, z, Race, BiomeR, 45f);
+    /// <summary>Urban wasteland around the freestyle park.</summary>
+    public static float Urban(float x, float z) => Falloff(x, z, Park, BiomeR, 45f);
+    /// <summary>Quarry basin around the demolition yard.</summary>
+    public static float Quarry(float x, float z) => Falloff(x, z, Yard, BiomeR - 15f, 40f);
+    /// <summary>Green meadow around the pit (what is left over).</summary>
+    public static float Meadow(float x, float z) => Mathf.Clamp01(1f - Desert(x, z) - Urban(x, z) - Quarry(x, z));
+
+    /// <summary>Extra terrain height (metres) that shapes each biome, blended to 0 under the venues.</summary>
+    public static float HeightOffset(float x, float z)
+    {
+        float h = 0f;
+
+        // Meadow: rolling hillocks near the pit, and a shallow basin holding the pond.
+        float meadow = Meadow(x, z);
+        if (meadow > 0f)
+        {
+            // (the pond basin is carved separately by BuildTerrain via Pond())
+            float roll = (Mathf.PerlinNoise(400f + x * 0.012f, 900f + z * 0.012f) - 0.5f) * 5.5f;
+            h += roll * meadow;
+        }
+
+        // Desert: a mesa ridge east of the track, plus long dune swells.
+        float desert = Desert(x, z);
+        if (desert > 0f)
+        {
+            float mesa = 16f * Falloff(x, z, new Vector2(Race.x + 74f, Race.y + 18f), 58f, 26f);
+            float ridge = 9f * Falloff(x, z, new Vector2(Race.x + 30f, Race.y + 66f), 52f, 30f);
+            float dunes = Mathf.PerlinNoise(70f + x * 0.02f, 30f + z * 0.02f) * 3.2f;
+            h += (mesa + ridge + dunes) * desert;
+        }
+
+        // Urban: rubble mounds ringing the concrete, otherwise dead flat.
+        float urban = Urban(x, z);
+        if (urban > 0f)
+        {
+            float ring = Mathf.Clamp01((Vector2.Distance(new Vector2(x, z), Park) - 34f) / 22f);
+            float mounds = ring * (1.5f + Mathf.PerlinNoise(220f + x * 0.05f, 610f + z * 0.05f) * 4.5f);
+            h += mounds * urban;
+        }
+
+        // Quarry: the yard sits in a dug-out basin with a stepped rim.
+        float quarry = Quarry(x, z);
+        if (quarry > 0f)
+        {
+            float d = Vector2.Distance(new Vector2(x, z), Yard);
+            float rim = Mathf.Clamp01((d - 44f) / 26f);
+            float bench = Mathf.Floor(rim * 3f) / 3f;                       // terraced benches
+            h += (-4.5f + bench * 13f + Mathf.PerlinNoise(11f + x * 0.06f, 5f + z * 0.06f) * 1.8f * rim) * quarry;
+        }
+
+        return h * (1f - Flat(x, z));
+    }
+
     // ------------------------------------------------------------------ shared bits
 
     // tiling=1.2 combined with ParkConcrete's mesh uv=0.2 repeats the texture every ~3.3m -
@@ -108,7 +180,7 @@ public static class VenueBuilder
         var v = new GameObject("Venue - Race track").transform;
         v.SetParent(root);
         var steel = SceneBuilder.Mat("Steel", new Color(0.55f, 0.56f, 0.58f), glossiness: 0.45f, metallic: 0.8f);
-        var paint = SceneBuilder.Mat("PaintWhite", new Color(0.9f, 0.9f, 0.88f), glossiness: 0.3f);
+        var paint = SceneBuilder.Mat("PaintWhite", new Color(0.72f, 0.72f, 0.7f), glossiness: 0.25f);
         var tyre = SceneBuilder.Mat("Tyre", new Color(0.06f, 0.06f, 0.06f), glossiness: 0.08f);
         var tyreW = SceneBuilder.Mat("TyreWhite", new Color(0.9f, 0.9f, 0.86f), glossiness: 0.3f);
         var checkerA = SceneBuilder.Mat("CheckerBlack", new Color(0.05f, 0.05f, 0.05f), glossiness: 0.2f);
@@ -139,19 +211,22 @@ public static class VenueBuilder
         var arch = new GameObject("Start arch").transform;
         arch.SetParent(v);
         arch.position = new Vector3(g1.x, ground, g1.z);
-        arch.rotation = Quaternion.LookRotation(Vector3.left, Vector3.up);
+        // Gate 1 sits on the south straight where the track runs along X, so the arch must
+        // span across X (local right = world X, i.e. forward = +Z). Facing it along Z would
+        // plant a post at (80, 15.5) - right in the climb-out from the start pad.
+        arch.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
         foreach (var sx in new[] { -3.5f, 3.5f })
             SceneBuilder.Primitive(PrimitiveType.Cylinder, "Post", arch, new Vector3(sx, 2.8f, 0f), new Vector3(0.22f, 2.8f, 0.22f), steel);
         SceneBuilder.Primitive(PrimitiveType.Cube, "Beam", arch, new Vector3(0f, 5.5f, 0f), new Vector3(7.4f, 0.3f, 0.3f), steel);
         for (int cx = 0; cx < 14; cx++)
             for (int cy = 0; cy < 2; cy++)
                 SceneBuilder.Primitive(PrimitiveType.Cube, "Check", arch, new Vector3(-3.25f + cx * 0.5f, 4.55f + cy * 0.5f, 0f), new Vector3(0.5f, 0.5f, 0.04f), (cx + cy) % 2 == 0 ? checkerA : paint, collider: false);
-        SceneBuilder.Primitive(PrimitiveType.Cube, "Start line", v, new Vector3(g1.x, ground + 0.03f, g1.z), new Vector3(0.35f, 0.004f, 6f), paint, collider: false);
+        SceneBuilder.Primitive(PrimitiveType.Cube, "Start line", v, new Vector3(g1.x, ground + 0.03f, g1.z), new Vector3(6f, 0.004f, 0.35f), paint, collider: false);
 
         // Start pad inside the oval, where the pilots launch
         Pad("RaceStartPad", v, terrain, Asphalt(), Race.x, Race.y - 6f, 10f, 7f);
         float padY = SceneBuilder.GroundHeight(terrain, Race.x, Race.y - 6f);
-        SceneBuilder.Primitive(PrimitiveType.Cylinder, "Start circle", v, new Vector3(Race.x, padY + 0.022f, Race.y - 6f), new Vector3(0.7f, 0.002f, 0.7f), paint, collider: false);
+        SceneBuilder.PaintRing("Start ring", v, paint, Asphalt(), new Vector3(Race.x, padY + 0.02f, Race.y - 6f), 0.46f, 0.575f);
         var spawn = Spawn(v, "SpawnPoint Race", new Vector3(Race.x, padY + 0.06f, Race.y - 6f), -90f);
 
         // Tyre walls on the outside of the four "corners"
@@ -231,7 +306,7 @@ public static class VenueBuilder
         var rebar = SceneBuilder.Mat("Rust", new Color(0.45f, 0.25f, 0.12f), glossiness: 0.2f);
         var container = GeneratedAssets.CorrugatedMetal("Container", new Color(0.12f, 0.3f, 0.5f), 5f);
         var container2 = GeneratedAssets.CorrugatedMetal("Container2", new Color(0.6f, 0.2f, 0.1f), 5f);
-        var paint = SceneBuilder.Mat("PaintWhite", new Color(0.9f, 0.9f, 0.88f), glossiness: 0.3f);
+        var paint = SceneBuilder.Mat("PaintWhite", new Color(0.72f, 0.72f, 0.7f), glossiness: 0.25f);
         var accent = SceneBuilder.Mat("ParkAccent", new Color(0.8f, 0.3f, 0.9f), glossiness: 0.3f);
 
         Pad("ParkConcrete", v, terrain, concrete, Park.x, Park.y, ParkW, ParkD, 0.2f);
@@ -292,7 +367,7 @@ public static class VenueBuilder
         cA.isStatic = cB.isStatic = cC.isStatic = true;
 
         // Painted centre mark = spawn
-        SceneBuilder.Primitive(PrimitiveType.Cylinder, "Centre mark", v, new Vector3(Park.x, y0 + 0.032f, Park.y - 2f), new Vector3(0.7f, 0.002f, 0.7f), paint, collider: false);
+        SceneBuilder.PaintRing("Centre ring", v, paint, concrete, new Vector3(Park.x, y0, Park.y - 2f), 0.46f, 0.575f);
         var spawn = Spawn(v, "SpawnPoint Park", new Vector3(Park.x, y0 + 0.06f, Park.y - 2f), 0f);
         return (spawn, bando);
     }
@@ -399,5 +474,113 @@ public static class VenueBuilder
         float py = SceneBuilder.GroundHeight(terrain, Yard.x, Yard.y - hd + 3f);
         var spawn = Spawn(v, "SpawnPoint Yard", new Vector3(Yard.x, py + 0.06f, Yard.y - hd + 3f), 0f);
         return (spawn, spawn);
+    }
+
+    // ==================================================================== biome dressing
+
+    /// <summary>Rocks, city blocks and spoil heaps that make each biome read as its own place.</summary>
+    public static void BuildLandscapes(Transform root, Terrain terrain)
+    {
+        var v = new GameObject("Landscape").transform;
+        v.SetParent(root);
+        var rocks = RockGenerator.Variants(4, 0.32f, "Rock");
+        var slabs = RockGenerator.Variants(3, 0.18f, "Slab");
+        var rockMat = GeneratedAssets.PbrMaterial("RockFace", "aerial_grass_rock", 0.5f, 0.35f, new Color(1.05f, 0.98f, 0.88f));
+        var duskRock = GeneratedAssets.PbrMaterial("QuarryRock", "gravel_road", 0.7f, 0.3f, new Color(0.92f, 0.9f, 0.9f));
+        var dirtMat = GeneratedAssets.PbrMaterial("SpoilDirt", "dirt_aerial_02", 0.6f, 0.3f);
+        var rng = new System.Random(20260922);
+        float Rand(float lo, float hi) => lo + (float)rng.NextDouble() * (hi - lo);
+
+        void Rock(Transform parent, Mesh[] set, Material mat, float x, float z, float scale, float sink = 0.25f)
+        {
+            float g = SceneBuilder.GroundHeight(terrain, x, z);
+            var go = SceneBuilder.MeshObject("Rock", parent, set[rng.Next(set.Length)], mat, new Vector3(x, g - scale * sink, z));
+            go.transform.rotation = Quaternion.Euler(Rand(-12f, 12f), Rand(0f, 360f), Rand(-12f, 12f));
+            go.transform.localScale = new Vector3(scale * Rand(0.85f, 1.3f), scale * Rand(0.7f, 1.1f), scale * Rand(0.85f, 1.3f));
+            var col = go.AddComponent<SphereCollider>();
+            col.radius = 0.85f;
+            go.isStatic = true;
+        }
+
+        // ---- desert: boulder fields, a mesa cliff of stacked slabs, dry scrub ----
+        var desert = new GameObject("Desert").transform;
+        desert.SetParent(v);
+        for (int i = 0; i < 90; i++)
+        {
+            float a = Rand(0f, Mathf.PI * 2f), r = Rand(38f, 100f);
+            float x = Race.x + Mathf.Cos(a) * r, z = Race.y + Mathf.Sin(a) * r;
+            if (Keepout(x, z, 8f) || Desert(x, z) < 0.45f) continue;
+            Rock(desert, rocks, rockMat, x, z, Rand(0.6f, 3.4f));
+        }
+        // cliff band along the mesa edge
+        for (int i = 0; i < 26; i++)
+        {
+            float a = Mathf.Lerp(-1.15f, 1.15f, i / 25f);
+            float x = Race.x + 74f + Mathf.Cos(a) * 34f, z = Race.y + 18f + Mathf.Sin(a) * 34f;
+            Rock(desert, slabs, rockMat, x, z, Rand(4f, 8.5f), 0.45f);
+        }
+
+        // ---- urban: a block of derelict towers, lamp posts and kerbs ----
+        var urban = new GameObject("Urban").transform;
+        urban.SetParent(v);
+        var wall = GeneratedAssets.PbrMaterial("CityWall", "asphalt_pit_lane", 0.3f, 0.4f, new Color(1f, 0.98f, 0.94f));
+        var glass = SceneBuilder.Mat("BuildingWindow", new Color(0.15f, 0.22f, 0.28f), glossiness: 0.7f, metallic: 0.2f);
+        var steel = SceneBuilder.Mat("Steel", new Color(0.55f, 0.56f, 0.58f), glossiness: 0.45f, metallic: 0.8f);
+        for (int i = 0; i < 9; i++)
+        {
+            float a = i / 9f * Mathf.PI * 2f + 0.35f;
+            float r = Rand(42f, 70f);
+            float x = Park.x + Mathf.Cos(a) * r, z = Park.y + Mathf.Sin(a) * r;
+            if (Keepout(x, z, 8f)) continue;
+            float w = Rand(9f, 15f), d = Rand(9f, 14f), h = Rand(10f, 24f);
+            float g = SceneBuilder.GroundHeight(terrain, x, z);
+            var b = new GameObject("Tower").transform;
+            b.SetParent(urban);
+            b.position = new Vector3(x, g, z);
+            b.rotation = Quaternion.Euler(0f, Rand(0f, 360f), 0f);
+            SceneBuilder.Primitive(PrimitiveType.Cube, "Shell", b, new Vector3(0f, h * 0.5f, 0f), new Vector3(w, h, d), wall).isStatic = true;
+            // window bands on all four faces
+            int floors = Mathf.Max(3, Mathf.RoundToInt(h / 3.2f));
+            for (int fl = 1; fl < floors; fl++)
+            {
+                float y = fl * (h / floors);
+                SceneBuilder.Primitive(PrimitiveType.Cube, "Band", b, new Vector3(0f, y, 0f), new Vector3(w + 0.06f, 1.3f, d - 1.6f), glass, collider: false);
+                SceneBuilder.Primitive(PrimitiveType.Cube, "Band", b, new Vector3(0f, y, 0f), new Vector3(w - 1.6f, 1.3f, d + 0.06f), glass, collider: false);
+            }
+            SceneBuilder.Primitive(PrimitiveType.Cube, "Parapet", b, new Vector3(0f, h + 0.4f, 0f), new Vector3(w + 0.5f, 0.8f, d + 0.5f), wall);
+        }
+        for (int i = 0; i < 14; i++)
+        {
+            float a = i / 14f * Mathf.PI * 2f;
+            float x = Park.x + Mathf.Cos(a) * 30f, z = Park.y + Mathf.Sin(a) * 26f;
+            if (Keepout(x, z, 1f)) continue;
+            float g = SceneBuilder.GroundHeight(terrain, x, z);
+            SceneBuilder.Primitive(PrimitiveType.Cylinder, "Lamp post", urban, new Vector3(x, g + 3.2f, z), new Vector3(0.12f, 3.2f, 0.12f), steel);
+            SceneBuilder.Primitive(PrimitiveType.Cube, "Lamp head", urban, new Vector3(x, g + 6.5f, z), new Vector3(0.9f, 0.18f, 0.35f), steel, collider: false);
+        }
+
+        // ---- quarry: boulder piles on the benches and conical spoil heaps ----
+        var quarry = new GameObject("Quarry").transform;
+        quarry.SetParent(v);
+        for (int i = 0; i < 120; i++)
+        {
+            float a = Rand(0f, Mathf.PI * 2f), r = Rand(36f, 92f);
+            float x = Yard.x + Mathf.Cos(a) * r, z = Yard.y + Mathf.Sin(a) * r;
+            // leave the approach corridor south of the yard gate clear of boulders
+            if (Keepout(x, z, 10f) || Quarry(x, z) < 0.45f) continue;
+            if (Mathf.Abs(x - Yard.x) < 14f && z < Yard.y - YardD * 0.5f) continue;
+            Rock(quarry, rocks, duskRock, x, z, Rand(0.5f, 3f));
+        }
+        var heap = GeneratedAssets.SaveMesh(MeshBuilder.Lathe(new[] { new Vector2(1f, 0f), new Vector2(0.92f, 0.18f), new Vector2(0.55f, 0.62f), new Vector2(0.12f, 0.95f), new Vector2(0f, 1f) }, 20, "SpoilHeap"), "SpoilHeap");
+        foreach (var (hx, hz, hs) in new[] { (-58f, 34f, 9f), (52f, 40f, 7f), (-22f, 152f, 11f), (30f, 148f, 8f) })
+        {
+            float x = Yard.x + hx, z = hz;
+            if (Keepout(x, z, 6f)) continue;
+            float g = SceneBuilder.GroundHeight(terrain, x, z);
+            var go = SceneBuilder.MeshObject("Spoil heap", quarry, heap, dirtMat, new Vector3(x, g - 0.3f, z));
+            go.transform.localScale = new Vector3(hs, hs * Rand(0.4f, 0.6f), hs);
+            go.AddComponent<MeshCollider>();
+            go.isStatic = true;
+        }
     }
 }

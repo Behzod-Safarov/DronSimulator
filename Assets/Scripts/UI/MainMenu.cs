@@ -15,9 +15,7 @@ public class MainMenu : MonoBehaviour
     public CameraSwitcher cameras;
     public Camera showcaseCamera;
     public PilotInput input;
-    public DronePhysics drone;
     public FlightController flightController;
-    public CrashDetector crashDetector;
     public Osd osd;
     [Tooltip("Skip straight into free flight (used by the automated self-test)")]
     public bool skipMenu;
@@ -68,6 +66,7 @@ public class MainMenu : MonoBehaviour
     readonly List<Rect> cardRects = new List<Rect>();
     readonly List<Rect> rowRects = new List<Rect>();
     readonly List<Rect> optionRects = new List<Rect>();
+    Rect backRect;                 // on-screen Back button (menus are mouse-driven too, not just ESC)
     float U => Screen.height / 1080f;
     Vector2 mouseGui;
     bool mouseClick, guiClick;
@@ -117,6 +116,9 @@ public class MainMenu : MonoBehaviour
             resultsAt = -1f;
             starsPlayed = 0;
             selOption = 0;
+            // Freeze the world behind the card: the menu owns the sticks now, so an
+            // unpaused quad would simply drop out of the sky while you read your score.
+            if (lessons != null && !lessons.Paused) lessons.TogglePause();
             SetState(State.Results);
             Fx.PlayConfirm();
         }
@@ -138,6 +140,7 @@ public class MainMenu : MonoBehaviour
 
     void SetState(State s)
     {
+        backRect = new Rect();     // the new page draws its own
         Current = s;
         stateTime = 0f;
         mouseClick = false;
@@ -214,7 +217,7 @@ public class MainMenu : MonoBehaviour
                 SetState(State.Drills);
             }
         }
-        else if (back) { Fx.PlayTick(); SetState(State.Title); }
+        else if (back || ClickedBack()) { Fx.PlayTick(); selOption = 0; SetState(State.Title); }
     }
 
     // ---- drills -------------------------------------------------------------------
@@ -234,13 +237,14 @@ public class MainMenu : MonoBehaviour
 
         bool clickedRow = mouseClick && selDrill < rowRects.Count && rowRects[selDrill].Contains(mouseGui);
         if (confirm || clickedRow || (digit >= 1 && digit <= d.lessons.Count)) { Fx.PlayConfirm(); Launch(d.lessons[selDrill]); }
-        else if (back) { Fx.PlayTick(); SetState(State.Disciplines); }
+        else if (back || ClickedBack()) { Fx.PlayTick(); SetState(State.Disciplines); }
     }
 
     // ---- launch ------------------------------------------------------------------
     void Launch(int lessonIndex)
     {
         pendingLesson = lessonIndex;
+        if (lessons != null && lessons.Paused) lessons.TogglePause();
         launchFromMenu = Current == State.Disciplines || Current == State.Drills || Current == State.Title;
         fadeTarget = 1f;
         SetState(State.Launching);
@@ -414,6 +418,20 @@ public class MainMenu : MonoBehaviour
         selOption = (selOption + count) % count;
         for (int i = 0; i < optionRects.Count && i < count; i++) if (optionRects[i].Contains(mouseGui)) selOption = i;
         if (selOption != before) Fx.PlayTick();
+    }
+
+    /// <summary>True when the on-screen Back button was clicked this frame.</summary>
+    bool ClickedBack() => mouseClick && backRect.width > 0f && backRect.Contains(mouseGui);
+
+    /// <summary>Draws the Back button top-left and remembers its hit area.</summary>
+    void DrawBack(string label)
+    {
+        float bh = 48f * U, bw = Mathf.Max(190f * U, S(20, FontStyle.Bold).CalcSize(new GUIContent(Loc.T(label))).x + 92f * U);
+        backRect = new Rect(34f * U, 26f * U, bw, bh);
+        bool hot = backRect.Contains(mouseGui);
+        Rounded(backRect, new Color(0.05f, 0.06f, 0.09f, hot ? 0.95f : 0.8f), 12f * U);
+        Rounded(backRect, new Color(1, 1, 1, hot ? 0.75f : 0.35f), 12f * U, 2f * U);
+        Text(backRect, "←   " + Loc.T(label), S(20, FontStyle.Bold, TextAnchor.MiddleCenter), hot ? Color.white : new Color(1, 1, 1, 0.85f), false);
     }
 
     bool ClickedOption() => mouseClick && selOption < optionRects.Count && optionRects[selOption].Contains(mouseGui);
@@ -663,6 +681,7 @@ public class MainMenu : MonoBehaviour
     // ---- disciplines ----------------------------------------------------------------------
     void DrawDisciplines(float w, float h)
     {
+        DrawBack("Main menu");
         Text(new Rect(0, 48f * U, w, 60f * U), Loc.T("CHOOSE YOUR TRAINING"), S(52, FontStyle.Bold, TextAnchor.MiddleCenter), Color.white);
         Text(new Rect(0, 108f * U, w, 34f * U), Loc.T("Each discipline is a ladder of scored drills. Three stars on every drill and you are ready for the real thing."),
             S(21, FontStyle.Normal, TextAnchor.MiddleCenter), new Color(1, 1, 1, 0.7f));
@@ -727,9 +746,16 @@ public class MainMenu : MonoBehaviour
     // ---- drills -------------------------------------------------------------------------------
     void DrawDrills(float w, float h)
     {
+        // OnGUI can run between a state change and the next Update, so never trust the
+        // selection indices here - clamp them to what this discipline actually holds.
+        if (lessons.Disciplines.Count == 0) return;
+        selDiscipline = Mathf.Clamp(selDiscipline, 0, lessons.Disciplines.Count - 1);
         var d = lessons.Disciplines[selDiscipline];
+        if (d.lessons.Count == 0) return;
+        selDrill = Mathf.Clamp(selDrill, 0, d.lessons.Count - 1);
         var look = LookFor(d.name);
-        float margin = 60f * U, top = 70f * U;
+        DrawBack("Disciplines");
+        float margin = 60f * U, top = 88f * U;   // leaves room for the Back button above the panels
         float leftW = w * 0.32f, gap = 30f * U;
         float rightX = margin + leftW + gap, rightW = w - rightX - margin;
         float panelH = h - top - 110f * U;
@@ -795,20 +821,64 @@ public class MainMenu : MonoBehaviour
             y += rowH + 8f * U;
         }
 
-        // instructions for the selected drill
+        // Student briefing for the selected drill: goal, steps, skill, tip, controls, scoring
         var selLesson = lessons.Lessons[d.lessons[selDrill]];
         var info = new Rect(rightX, y + 10f * U, rightW, top + panelH - y - 10f * U);
-        Rounded(info, new Color(0.05f, 0.06f, 0.09f, 0.85f), 14f * U);
-        Text(new Rect(info.x + 20f * U, info.y + 12f * U, info.width - 40f * U, 30f * U), Loc.T("BRIEFING"), S(16, FontStyle.Bold), look.accent, false);
-        Text(new Rect(info.x + 20f * U, info.y + 42f * U, info.width - 40f * U, info.height * 0.5f), selLesson.DisplayInstructions, S(22, FontStyle.Normal, TextAnchor.UpperLeft, true), new Color(1, 1, 1, 0.9f), false);
-        // scoring rules + best result for this drill
-        float ry = info.yMax - 118f * U;
-        Text(new Rect(info.x + 20f * U, ry, info.width - 40f * U, 26f * U), Loc.T("SCORING"), S(16, FontStyle.Bold), look.accent, false);
-        Text(new Rect(info.x + 20f * U, ry + 28f * U, info.width - 40f * U, 30f * U),
+        Rounded(info, new Color(0.05f, 0.06f, 0.09f, 0.88f), 14f * U);
+        float bx = info.x + 22f * U, bw = info.width - 44f * U, by = info.y + 14f * U;
+
+        // header row: BRIEFING + difficulty dots
+        Text(new Rect(bx, by, bw * 0.5f, 26f * U), Loc.T("BRIEFING"), S(16, FontStyle.Bold), look.accent, false);
+        string dots = "";
+        for (int i = 0; i < 5; i++) dots += i < selLesson.difficulty ? "●" : "○";
+        Text(new Rect(bx, by, bw, 26f * U), Loc.T("Difficulty") + "  " + dots, S(16, FontStyle.Bold, TextAnchor.UpperRight), new Color(1, 1, 1, 0.75f), false);
+        by += 30f * U;
+
+        // goal
+        if (!string.IsNullOrEmpty(selLesson.goal))
+        {
+            Text(new Rect(bx, by, bw, 60f * U), selLesson.DisplayGoal, S(21, FontStyle.Bold, TextAnchor.UpperLeft, true), Color.white, false);
+            by += Mathf.Max(30f * U, S(21, FontStyle.Bold, TextAnchor.UpperLeft, true).CalcHeight(new GUIContent(selLesson.DisplayGoal), bw)) + 10f * U;
+        }
+
+        // numbered steps
+        if (selLesson.steps != null)
+            for (int i = 0; i < selLesson.steps.Length; i++)
+            {
+                string step = Loc.T(selLesson.steps[i]);
+                var stStyle = S(18, FontStyle.Normal, TextAnchor.UpperLeft, true);
+                float sh = Mathf.Max(24f * U, stStyle.CalcHeight(new GUIContent(step), bw - 34f * U));
+                Text(new Rect(bx, by, 28f * U, 24f * U), (i + 1) + ".", S(18, FontStyle.Bold), look.accent, false);
+                Text(new Rect(bx + 30f * U, by, bw - 34f * U, sh), step, stStyle, new Color(1, 1, 1, 0.92f), false);
+                by += sh + 4f * U;
+            }
+        by += 8f * U;
+
+        // skill / tip / controls, each on one line with a coloured label
+        void Note(string label, string body, Color col)
+        {
+            if (string.IsNullOrEmpty(body)) return;
+            var bodyStyle = S(17, FontStyle.Normal, TextAnchor.UpperLeft, true);
+            var labelStyle = S(14, FontStyle.Bold);
+            string labelText = Loc.T(label);
+            // the label column has to fit the translated word, not a fixed English width
+            float lw = Mathf.Max(120f * U, labelStyle.CalcSize(new GUIContent(labelText)).x + 14f * U);
+            float bh = Mathf.Max(22f * U, bodyStyle.CalcHeight(new GUIContent(body), bw - lw));
+            Text(new Rect(bx, by, lw, 22f * U), labelText, labelStyle, col, false);
+            Text(new Rect(bx + lw, by, bw - lw, bh), body, bodyStyle, new Color(1, 1, 1, 0.82f), false);
+            by += bh + 6f * U;
+        }
+        Note("YOU LEARN", selLesson.DisplaySkill, new Color(0.5f, 0.9f, 1f));
+        Note("WATCH OUT", selLesson.DisplayTip, new Color(1f, 0.8f, 0.35f));
+        Note("CONTROLS", selLesson.DisplayControls, new Color(0.75f, 0.85f, 0.95f));
+
+        // scoring rules + best result, pinned to the bottom of the card
+        float ry = info.yMax - 62f * U;
+        Text(new Rect(bx, ry, bw, 24f * U),
             Loc.F("100 points, minus {0} per crash and {1:0.#} per second over par ({2:0} s).   ★ 35   ★★ 65   ★★★ 90", selLesson.pointsPerCrash, selLesson.pointsPerSecondOverPar, selLesson.parTime),
-            S(17), new Color(1, 1, 1, 0.75f), false);
+            S(15), new Color(1, 1, 1, 0.6f), false);
         string bestLine = selLesson.Attempts == 0 ? Loc.T("You have not flown this drill yet.") : Loc.F("Your best: {0}   score {1}   over {2} attempt(s)", Stars(selLesson.BestStars), selLesson.BestScore, selLesson.Attempts);
-        Text(new Rect(info.x + 20f * U, ry + 60f * U, info.width - 40f * U, 30f * U), bestLine, S(17, FontStyle.Bold), new Color(1f, 0.85f, 0.3f), false);
+        Text(new Rect(bx, ry + 26f * U, bw, 26f * U), bestLine, S(16, FontStyle.Bold), new Color(1f, 0.85f, 0.3f), false);
 
         Footer(w, h, Loc.T("↑  ↓  drill      ←  →  discipline      ENTER / ⓐ  FLY      ESC  back"));
     }
@@ -823,8 +893,13 @@ public class MainMenu : MonoBehaviour
         Glow(new Vector2(w * 0.5f, y + 50f * U), 420f * U, new Color(look.accent.r, look.accent.g, look.accent.b, 0.25f * a));
         Text(new Rect(0, y, w, 40f * U), l != null ? Loc.T(l.discipline).ToUpper() + "   ·   " + Loc.T(l.venue).ToUpper() : Loc.T("FREE FLIGHT"), S(24, FontStyle.Bold, TextAnchor.MiddleCenter), new Color(look.accent.r, look.accent.g, look.accent.b, a));
         Text(new Rect(0, y + 36f * U, w, 90f * U), l != null ? l.DisplayTitle : Loc.T("The whole field is yours"), S(64, FontStyle.Bold, TextAnchor.MiddleCenter), new Color(1, 1, 1, a));
-        if (l != null) Text(new Rect(0, y + 126f * U, w, 36f * U), Loc.F("suggested mode  {0}   ·   par {1:0} s   ·   best {2}", l.recommendedMode.ToString().ToUpper(), l.parTime, Stars(l.BestStars)),
-            S(20, FontStyle.Normal, TextAnchor.MiddleCenter), new Color(1, 1, 1, 0.75f * a));
+        if (l != null)
+        {
+            // the goal, so a student reads what to do while the scene fades in
+            Text(new Rect(w * 0.15f, y + 126f * U, w * 0.7f, 60f * U), l.DisplayGoal, S(24, FontStyle.Normal, TextAnchor.UpperCenter, true), new Color(1, 1, 1, 0.92f * a), false);
+            Text(new Rect(0, y + 196f * U, w, 36f * U), Loc.F("suggested mode  {0}   ·   par {1:0} s   ·   best {2}", l.recommendedMode.ToString().ToUpper(), l.parTime, Stars(l.BestStars)),
+                S(19, FontStyle.Normal, TextAnchor.MiddleCenter), new Color(1, 1, 1, 0.7f * a), false);
+        }
     }
 
     // ---- option panels (pause / results) --------------------------------------------------------

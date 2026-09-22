@@ -25,11 +25,6 @@ public class ShowcaseCamera : MonoBehaviour
     public float radiusDrift = 0.2f;
     public float heightDrift = 0.25f;
 
-    /// <summary>0..1, how far into the current shot (used by the menu for its fade-cuts).</summary>
-    public float ShotProgress { get; private set; }
-    /// <summary>True on the frame a cut happens.</summary>
-    public bool CutThisFrame { get; private set; }
-
     int index;
     float t;
     float angle;
@@ -44,7 +39,6 @@ public class ShowcaseCamera : MonoBehaviour
 
     void LateUpdate()
     {
-        CutThisFrame = false;
         if (shots == null || shots.Length == 0) return;
         var s = shots[index];
         if (s.target == null) { Advance(); return; }
@@ -52,7 +46,6 @@ public class ShowcaseCamera : MonoBehaviour
         float dt = Time.unscaledDeltaTime;
         t += dt;
         angle += s.degreesPerSecond * dt;
-        ShotProgress = Mathf.Clamp01(t / Mathf.Max(0.1f, s.seconds));
         if (t >= s.seconds) { Advance(); return; }
 
         float r = s.radius * (1f + Mathf.Sin(seed + t * 0.35f) * radiusDrift);
@@ -70,6 +63,5 @@ public class ShowcaseCamera : MonoBehaviour
         t = 0f;
         angle = Random.value * 360f;
         seed = Random.value * 100f;
-        CutThisFrame = true;
     }
 }

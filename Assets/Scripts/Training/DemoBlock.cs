@@ -20,7 +20,12 @@ public class DemoBlock : MonoBehaviour
         captured = true;
     }
 
-    public bool IsToppled => Vector3.Distance(transform.position, startPos) > 0.8f || Vector3.Angle(transform.up, startRot * Vector3.up) > 40f;
+    /// <summary>Metres the block has shifted from where it was built.</summary>
+    public float Drift => Vector3.Distance(transform.position, startPos);
+    /// <summary>Degrees the block has tipped from how it was built.</summary>
+    public float Tilt => Vector3.Angle(transform.up, startRot * Vector3.up);
+
+    public bool IsToppled => Drift > 0.8f || Tilt > 40f;
 
     public void ResetBlock()
     {

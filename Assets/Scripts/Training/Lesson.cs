@@ -12,6 +12,19 @@ public abstract class Lesson : MonoBehaviour
     [TextArea(2, 5)] public string instructions = "";
     [Tooltip("Training discipline this drill belongs to (drills of one discipline run in order)")]
     public string discipline = "Basics";
+    [Header("Student briefing")]
+    [Tooltip("One sentence: what the student must achieve")]
+    public string goal = "";
+    [Tooltip("The steps to follow, in order (3-4 short lines)")]
+    public string[] steps = new string[0];
+    [Tooltip("What skill this drill builds, and why it matters on a real quad")]
+    public string skill = "";
+    [Tooltip("The mistake students usually make here")]
+    public string tip = "";
+    [Tooltip("Controls the student needs for this drill")]
+    public string controls = "";
+    [Range(1, 5)] [Tooltip("1 = first flight, 5 = advanced")] public int difficulty = 1;
+
     [Tooltip("Where the drone starts for this drill (null = the pit)")]
     public Transform spawn;
     [Tooltip("Venue name shown in the menus")]
@@ -43,6 +56,10 @@ public abstract class Lesson : MonoBehaviour
     /// <summary>Title / briefing in the current UI language (the English title stays the save key).</summary>
     public string DisplayTitle => Loc.T(title);
     public string DisplayInstructions => Loc.T(instructions);
+    public string DisplayGoal => Loc.T(goal);
+    public string DisplaySkill => Loc.T(skill);
+    public string DisplayTip => Loc.T(tip);
+    public string DisplayControls => Loc.T(controls);
 
     /// <summary>Optional big centre-screen text (countdowns, trick call-outs). Null = nothing.</summary>
     public virtual string Banner => null;

@@ -1,0 +1,1084 @@
+[Licensing::Module] Trying to connect to existing licensing client channel...
+Built from '6000.3/staging' branch; Version is '6000.3.24f1 (4e7b9b5b6244) revision 5143451'; Using compiler version '194234433'; Build Type 'Release'
+[Licensing::IpcConnector] Channel LicenseClient-b.chsafarov doesn't exist
+OS: 'Windows 11  (10.0.26200) Professional' Language: 'en' Physical Memory: 32359 MB
+BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
+System  architecture: x64
+Process architecture: x64
+Date: 2026-09-22T10:28:57Z
+[Licensing::Module] Successfully launched the LicensingClient (PId: 36396)
+Starting IPC server.
+
+COMMAND LINE ARGUMENTS:
+C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Unity.exe
+-batchmode
+-nographics
+-projectPath
+E:\utc\work\DroneTrainer
+-executeMethod
+SceneBuilder.Build
+-logFile
+E:\utc\work\DroneTrainer\build-glare.log
+-quit
+Successfully changed project path to: E:\utc\work\DroneTrainer
+E:/utc/work/DroneTrainer
+Waiting for clients to connect on \\.\pipe\Unity-LicenseClient-b.chsafarov, press Ctrl-C to exit.
+[UnityMemory] Configuration Parameters - Can be set up in boot.config
+    "memorysetup-temp-allocator-size-nav-mesh-worker=65536"
+    "memorysetup-temp-allocator-size-audio-worker=65536"
+    "memorysetup-temp-allocator-size-gfx=262144"
+    "memorysetup-allocator-temp-initial-block-size-main=262144"
+    "memorysetup-allocator-temp-initial-block-size-worker=262144"
+    "memorysetup-temp-allocator-size-background-worker=32768"
+    "memorysetup-temp-allocator-size-job-worker=262144"
+    "memorysetup-temp-allocator-size-preload-manager=33554432"
+    "memorysetup-remapper-allocator-initial-capacity=32768"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-temp-allocator-size-gi-baking-worker=262144"
+    "memorysetup-bucket-allocator-granularity=16"
+    "memorysetup-bucket-allocator-bucket-count=8"
+    "memorysetup-bucket-allocator-block-size=33554432"
+    "memorysetup-bucket-allocator-block-count=8"
+    "memorysetup-main-allocator-block-size=16777216"
+    "memorysetup-thread-allocator-block-size=16777216"
+    "memorysetup-gfx-main-allocator-block-size=16777216"
+    "memorysetup-gfx-thread-allocator-block-size=16777216"
+    "memorysetup-cache-allocator-block-size=4194304"
+    "memorysetup-typetree-allocator-block-size=2097152"
+    "memorysetup-profiler-bucket-allocator-granularity=16"
+    "memorysetup-profiler-bucket-allocator-bucket-count=8"
+    "memorysetup-profiler-bucket-allocator-block-size=33554432"
+    "memorysetup-profiler-bucket-allocator-block-count=8"
+    "memorysetup-profiler-allocator-block-size=16777216"
+    "memorysetup-profiler-editor-allocator-block-size=1048576"
+    "memorysetup-temp-allocator-size-main=16777216"
+    "memorysetup-job-temp-allocator-block-size=2097152"
+    "memorysetup-job-temp-allocator-block-size-background=1048576"
+    "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+    "memorysetup-temp-allocator-size-cloud-worker=32768"
+Player connection [39032]  Target information:
+
+Player connection [39032]  * "[IP] 192.168.155.243 [Port] 55504 [Flags] 2 [Guid] 2088650239 [EditorId] 2088650239 [Version] 1048832 [Id] WindowsEditor(7,OTDRAZRTS6) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [39032]  * "[IP] 100.88.53.219 [Port] 55504 [Flags] 2 [Guid] 2088650239 [EditorId] 2088650239 [Version] 1048832 [Id] WindowsEditor(7,OTDRAZRTS6) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+
+Player connection [39032] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [39032] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-b.chsafarov" at "2026-09-22T10:28:57.6613714Z"
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 36396, path: "C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Client] Handshaking with LicensingClient:
+  Version:                 1.18.3+d7ffd15
+  Session Id:              54aca46f56ae46368026cc76fa6bb7cd
+  Correlation Id:          4c6979f4bc60855b19c3342d4d5ac210
+  External correlation Id: 2033771909737220510
+  Machine Id:              u7nn9bA0M0N+y1tGOo6kBn/0E8Q=
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-b.chsafarov" (connect: 0.25s, validation: 0.05s, handshake: 0.03s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-b.chsafarov-notifications" at "2026-09-22T10:28:57.7383015Z"
+[Licensing::Module] Connected to LicensingClient (PId: 36396, launch time: 0.00, total connection time: 0.32s)
+[Licensing::Module] Error: Access token is unavailable; failed to update
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] License group:
+  Id: 18968507013248-UnityPersXXXX
+  Product: Unity Personal
+  Type: Assigned
+  Expiration: Unlimited
+[Licensing::Client] Successfully updated license, isAsync: True, time: 0.01
+[Licensing::Client] Successfully resolved entitlement details
+[Licensing::Module] Licensing Background thread has ended after 0.36s
+[Package Manager] Connected to IPC stream "Upm-33720" after 0.2 seconds.
+[Licensing::Client] Successfully resolved entitlement details
+Library Redirect Path: Library/
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Refreshing native plugins compatible for Editor in 0.05 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Initialize engine version: 6000.3.24f1 (4e7b9b5b6244)
+[Subsystems] Discovering subsystems at path C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/Resources/UnitySubsystems
+[Subsystems] Discovering subsystems at path E:/utc/work/DroneTrainer/Assets
+Forcing GfxDevice: Null
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+NullGfxDevice:
+    Version:  NULL 1.0 [1.0]
+    Renderer: Null Device
+    Vendor:   Unity Technologies
+Initialize mono
+Mono path[0] = 'C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/Managed'
+Mono path[1] = 'C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
+Mono config path = 'C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/MonoBleedingEdge/etc'
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56720
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
+ImportWorker Server TCP listen port: 0
+AcceleratorClientConnectionCallback - disconnected - :0
+Begin MonoManager ReloadAssembly
+Registering precompiled unity dll's ...
+Register platform support module: C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
+Registered in 0.001289 seconds.
+- Loaded All Assemblies, in  0.297 seconds
+Native extension for WindowsStandalone target not found
+Package Manager log level set to [2]
+ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.260 seconds
+Domain Reload Profiling: 554ms
+	BeginReloadAssembly (111ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (0ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (16ms)
+	RebuildCommonClasses (24ms)
+	RebuildNativeTypeToScriptingClass (7ms)
+	initialDomainReloadingComplete (33ms)
+	LoadAllAssembliesAndSetupDomain (119ms)
+		LoadAssemblies (93ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (116ms)
+			TypeCache.Refresh (114ms)
+				TypeCache.ScanAssembly (102ms)
+			BuildScriptInfoCaches (0ms)
+			ResolveRequiredComponents (0ms)
+	FinalizeReload (260ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (235ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (32ms)
+			SetLoadedEditorAssemblies (4ms)
+			BeforeProcessingInitializeOnLoad (52ms)
+			ProcessInitializeOnLoadAttributes (93ms)
+			ProcessInitializeOnLoadMethodAttributes (54ms)
+			AfterProcessingInitializeOnLoad (0ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (0ms)
+[Licensing::Client] Successfully resolved entitlement details
+Application.AssetDatabase Initial Refresh Start
+[Package Manager] Restoring resolved packages state from cache
+[Licensing::Client] Successfully resolved entitlement details
+[Package Manager] Registered 24 packages:
+  Packages from [https://packages.unity.com]:
+    com.unity.inputsystem@1.11.2 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.inputsystem@3c4a97c3950f)
+    com.unity.postprocessing@3.4.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.postprocessing@026b2a0827a4)
+    com.unity.ide.visualstudio@2.0.22 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.ide.visualstudio@8140e851d83e)
+    com.unity.ide.rider@3.0.31 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.ide.rider@7921be93db40)
+  Built-in packages:
+    com.unity.modules.animation@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.animation)
+    com.unity.modules.audio@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.audio)
+    com.unity.modules.director@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.director)
+    com.unity.modules.imageconversion@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.imageconversion)
+    com.unity.modules.imgui@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.imgui)
+    com.unity.modules.jsonserialize@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.jsonserialize)
+    com.unity.modules.particlesystem@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.particlesystem)
+    com.unity.modules.physics@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.physics)
+    com.unity.modules.screencapture@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.screencapture)
+    com.unity.modules.terrain@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.terrain)
+    com.unity.modules.terrainphysics@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.terrainphysics)
+    com.unity.modules.ui@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.ui)
+    com.unity.modules.uielements@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.uielements)
+    com.unity.modules.umbra@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.umbra)
+    com.unity.modules.unitywebrequest@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.unitywebrequest)
+    com.unity.modules.video@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.video)
+    com.unity.modules.wind@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.wind)
+    com.unity.modules.hierarchycore@1.0.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.modules.hierarchycore)
+    com.unity.ext.nunit@2.0.5 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.ext.nunit@d8c07649098d)
+    com.unity.test-framework@1.6.0 (location: E:\utc\work\DroneTrainer\Library\PackageCache\com.unity.test-framework@bd7f943e9647)
+[Subsystems] No new subsystems found in resolved package list.
+[Package Manager] Done registering packages in 0.01 seconds
+[ScriptCompilation] Requested script compilation because: Assetdatabase observed changes in script compilation related files
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:80
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Production
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: E:\utc\work\DroneTrainer\
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping application/grpc -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'gRPC - /UnityILPP.PostProcessing/Ping'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/2 POST http://ilpp/UnityILPP.PostProcessing/Ping application/grpc - - 200 - application/grpc 28.3439ms
+Starting: C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+WorkingDir: E:/utc/work/DroneTrainer
+DisplayProgressbar: Compiling Scripts
+ExitCode: 0 Duration: 0s816ms
+[232/235    0s] Csc Library/Bee/artifacts/1900b0aE.dag/Assembly-CSharp-Editor.dll (+2 others)
+[233/235    0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.pdb
+[234/235    0s] CopyFiles Library/ScriptAssemblies/Assembly-CSharp-Editor.dll
+*** Tundra build success (0.79 seconds), 3 items updated, 235 evaluated
+AssetDatabase: script compilation time: 1.116391s
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  0.407 seconds
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Native extension for WindowsStandalone target not found
+ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.343 seconds
+Domain Reload Profiling: 748ms
+	BeginReloadAssembly (251ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (16ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (137ms)
+	RebuildCommonClasses (26ms)
+	RebuildNativeTypeToScriptingClass (8ms)
+	initialDomainReloadingComplete (17ms)
+	LoadAllAssembliesAndSetupDomain (104ms)
+		LoadAssemblies (148ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (25ms)
+			TypeCache.Refresh (18ms)
+				TypeCache.ScanAssembly (13ms)
+			BuildScriptInfoCaches (4ms)
+			ResolveRequiredComponents (1ms)
+	FinalizeReload (343ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (249ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (15ms)
+			SetLoadedEditorAssemblies (2ms)
+			BeforeProcessingInitializeOnLoad (74ms)
+			ProcessInitializeOnLoadAttributes (128ms)
+			ProcessInitializeOnLoadMethodAttributes (27ms)
+			AfterProcessingInitializeOnLoad (4ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (16ms)
+Refreshing native plugins compatible for Editor in 0.26 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=fedaaa54a28f76a459fad164c61c34f7): Total: 2.024 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+	Summary:
+		Imports: total=0 (actual=0, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=426 ms
+		Asset DB Callback time: managed=50 ms, native=12 ms
+		Scripting: domain reloads=1, domain reload time=407 ms, compile time=1118 ms, other=8 ms
+		Project Asset Count: scripts=250, non-scripts=627
+		Asset File Changes: new=0, changed=2, moved=0, deleted=0
+		Scan Filter Count: 0
+	InvokeCustomDependenciesCallbacks: 0.002ms
+	InvokePackagesCallback: 12.064ms
+	ApplyChangesToAssetFolders: 0.262ms
+	Scan: 17.540ms
+	OnSourceAssetsModified: 0.811ms
+	CategorizeAssetsWithTransientArtifact: 3.796ms
+	ProcessAssetsWithTransientArtifactChanges: 8.785ms
+	CategorizeAssets: 5.406ms
+	ImportOutOfDateAssets: 344.501ms (-773.656ms without children)
+		CompileScripts: 1117.852ms
+		ReloadNativeAssets: 0.001ms
+		UnloadImportedAssets: 0.084ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.067ms
+		InitializingProgressBar: 0.000ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.000ms
+		OnDemandSchedulerStart: 0.153ms
+	PostProcessAllAssets: 51.028ms
+	Hotreload: 0.733ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.002ms
+	UnloadStreamsBegin: 1.158ms
+	PersistCurrentRevisions: 0.021ms
+	UnloadStreamsEnd: 0.001ms
+	GenerateScriptTypeHashes: 1.105ms
+	Untracked: 1577.770ms
+
+Application.AssetDatabase Initial Refresh End
+Scanning for USB devices : 2.907ms
+Initializing Unity extensions:
+[MODES] ModeService[none].Initialize
+[MODES] ModeService[none].LoadModes
+[MODES] Loading mode Default (0) for mode-current-id-Drone Trainer
+Unloading 33 Unused Serialized files (Serialized files now loaded: 0)
+Curl error 6: Could not resolve host: config.uca.cloud.unity3d.com
+Unloading 1072 unused Assets / (2.2 MB). Loaded Objects now: 1706.
+Memory consumption went from 124.3 MB to 122.0 MB.
+Total: 4.363100 ms (FindLiveObjects: 0.131600 ms CreateObjectMapping: 0.056100 ms MarkObjects: 3.350700 ms  DeleteObjects: 0.824100 ms)
+
+Curl error 6: Could not resolve host: cdp.cloud.unity3d.com
+Unloading 1 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 0 unused Assets / (2.2 KB). Loaded Objects now: 1715.
+Memory consumption went from 116.8 MB to 116.8 MB.
+Total: 3.255200 ms (FindLiveObjects: 0.073900 ms CreateObjectMapping: 0.017000 ms MarkObjects: 3.160300 ms  DeleteObjects: 0.003500 ms)
+
+Start importing Assets/External/PolyHaven/sky_kloofendal_48d_2k.hdr using Guid(922a29927c82bf543ad98e8c601cbeee) (TextureImporter) -> (artifact id: '83d9430c8ebcc85a75b929b33dac1ebf') in 0.1362337 seconds
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=04d8c238bef922c4dad3df750420ffae): Total: 0.164 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/External/PolyHaven/sky_kloofendal_48d_2k.hdr using Guid(922a29927c82bf543ad98e8c601cbeee) (TextureImporter) -> (artifact id: '50a4b70e6fa11d3682a2fe4f19222ad7') in 0.7265394 seconds
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=9751b88bacb8d55429eef79da65037d7): Total: 0.737 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+	Summary:
+		Imports: total=1 (actual=1, local cache=0, cache server=0)
+		Asset DB Process Time: managed=0 ms, native=735 ms
+		Asset DB Callback time: managed=0 ms, native=0 ms
+		Scripting: domain reloads=0, domain reload time=0 ms, compile time=0 ms, other=0 ms
+		Project Asset Count: scripts=250, non-scripts=627
+		Asset File Changes: new=0, changed=1, moved=0, deleted=0
+		Scan Filter Count: 4
+	InvokeCustomDependenciesCallbacks: 0.001ms
+	InvokePackagesCallback: 0.001ms
+	ApplyChangesToAssetFolders: 0.067ms
+	Scan: 4.175ms
+	OnSourceAssetsModified: 0.044ms
+	CategorizeAssetsWithTransientArtifact: 0.007ms
+	ProcessAssetsWithTransientArtifactChanges: 0.016ms
+	CategorizeAssets: 0.699ms
+	ImportOutOfDateAssets: 727.505ms (-0.075ms without children)
+		ImportManagerImport: 727.008ms (0.247ms without children)
+			ImportInProcess: 726.742ms
+			UpdateCategorizedAssets: 0.018ms
+		ReloadNativeAssets: 0.004ms
+		UnloadImportedAssets: 0.164ms
+		ReloadImportedAssets: 0.155ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.050ms
+		InitializingProgressBar: 0.005ms
+		PostProcessAllAssetNotificationsAddChangedAssets: 0.001ms
+		OnDemandSchedulerStart: 0.193ms
+	PostProcessAllAssets: 0.589ms
+	Hotreload: 0.472ms
+	GatherAllCurrentPrimaryArtifactRevisions: 0.051ms
+	UnloadStreamsBegin: 0.031ms
+	PersistCurrentRevisions: 0.046ms
+	UnloadStreamsEnd: 0.000ms
+	Untracked: 3.549ms
+
+Sun direction from HDRI: (0.38, 0.74, 0.55)  (elevation 48°)
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+SceneBuilder:SetupSkyAndFog (UnityEngine.Light) (at Assets/Editor/SceneBuilder.cs:132)
+SceneBuilder:Build () (at Assets/Editor/SceneBuilder.cs:45)
+
+(Filename: Assets/Editor/SceneBuilder.cs Line: 132)
+
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
+Refreshing native plugins compatible for Editor in 0.21 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=0d87c244d3cae3843be964456581a648): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=7402ea664877cbb4b89388bc30014843): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.24 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=e1c8facac83359b46ba5fe07aace8dbd): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=9fc38b458dea1804eacdca986d5814aa): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=657a445ee0173c24aa95540e5cce9ee6): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=a178b2e183b955c47be5c7eedd04f297): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=c23b675ea4747084eaea337d2fd8104b): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=bb56bc2b8fa408a41a963b7d8d9b25b3): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=0c986f4b736d78749833c3f87c009948): Total: 0.004 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=0c34dee6ac3eb3846ba10e9a9f165a1e): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=488f7f800b30cd14cb471fced5aa3e4d): Total: 0.004 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=f7310d2f87e4ee44883c5a7796ee2b28): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=0a303d35a6f597040a206b4d23f82a00): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=f17593e1114862c488fce02978d9da40): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=51c730f7466afbd44b02df25a4a918b5): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.24 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=5a19db0625920cf4e8c8a6bce3330089): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=4b5fe841eb982194e9aa6fb3a0750b1a): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=1186631e25ad91d4e97a0c0a8346ea5b): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=dc4540a4e7cdb0748a4ac9e1840009ea): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=0da7bd20a751fbd4d9f840466521971e): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.23 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=816a7f99be7550144899a3eef29c7504): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=07c7a432babbf2b4ba28da88bf84708c): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.24 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=ffe71ea2ddcdf214eb3985275ba4ec34): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=d63ae975db1728a45aa8408ee8811cf1): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.26 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=47af47c53f3787544ab623012c2eebfa): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=41e92849bbd048c408139653aff6972f): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=acbe2cc84a88c514bb9f8f87582a94b8): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=fad465edf3f677942bdf0dec787600ed): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Asset Pipeline Refresh (id=3f19f25bb7b58174685c57e834ad8a52): Total: 0.003 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=356b429fd69d0cd478ca581446768de8): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.21 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=372e1ec4767c9804ca45846002d2c0ac): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=324ae33eee5631344b6d734a5bfcf110): Total: 0.004 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=e42830de774a8b14c8eb6cb199bf8e72): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=6e38680615477ae45b479e0d8b61b177): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=8ff91f1360e608743863d365626592e6): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=8738ae216fac8e24e8f6ababff10ae5d): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=695aad88551e9b246b87576e8d5763cc): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=eb46e6d77823dfb41a431b98c0415d49): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=a570ef8a5793d8b469b2d822ee1217b4): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=840ddd925d9918a4fa966b71209bfac9): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=2f027397e82a6bc40a0f95b00f6ce1d7): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=f1c7b79effcaf7c44a99b6e518fde3ca): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=d51218814aaa9c54597ed194fbe77554): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=6432ef5398328a2499e880cc8b4e8321): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=101d39d1667a55c4191707e2b9814e09): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=4f11322411e9dfb4d82e4b066cf74f13): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=6d21d4071f8540c4092dbe0d2041e263): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=8fe073764b5e32d4680c8b6ab9d3f8b3): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.25 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=66e0e876eed4da748bd2d7bb20497dea): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=7b376be760a63cc4bb7e1f9c99ff6d13): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.27 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=28b5e3155cd0d1248aac9f7ac64bd344): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=d457d4dd4cd64e144b8fa5d2fc808efe): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.23 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=4df16f00c4a25194fa20efc185e585d0): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=ef12ec40bd3e13543a3eda91d0a006bd): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=ded5994a9d4d90247b13a0b33570683f): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.21 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=3c2a059d59191e745b11ca457c2c8fae): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=ef5939c345442e84989af5bb0ffa9071): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.21 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=53cb9f41b6404674f9c62cf7c6b02576): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=0ae544952f3eb1a44904d533c65fc197): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.22 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=28a457f823d5bb6458ffcf5e7f5d3f2e): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=a92fb401a34e26b44be4bd86572cd3b1): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.27 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=712ddca42360f71409d9b633642da927): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.33 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=941d2aeb6cfb92d4a865cd2ec5ed2b8e): Total: 0.010 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.24 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=3c326765e1a1e8e42b1739283549a283): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.34 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=6e3ee74b329e24748917d6b3c31a5c4b): Total: 0.010 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.22 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=693cd88dd47b6944ebce3f9af275c38e): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=f0d42c6df9c813545b0373e741b6fbda): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=f52f837812ea2c8419ee64c93c8afe58): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.24 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=392b7374aea56394ea68c915ab4cbc1a): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=f320320a1a41dfc48985b26951facddf): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.21 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=d6ac9537897116d49b06175e10090ff4): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=ca41aaf8fc60eab4ab5aa2f01204791b): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=1f0cdc6d24750f74dafb726a3d14d998): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=ce0a24c9b424df546b7296f2998a221f): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=7460fe3a196bf0048bf64e5651f6cec9): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.22 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=ffb6609d75747ec44b14eed171941774): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=46b3bb37081aaa7499c60e7b4347945f): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.24 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=c105a4ef7c3e14b419cc7ee95b6b4672): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=38edf21682e133b4a97c3654c9bea9d4): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.29 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=77e4081f051d99e4a9e6c9d007291d3a): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=4f91af98202e9a3489305e4b1c018ca0): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.26 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=b8b579074bdd5e343a33de84e6949205): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=afab06cb2b33a1d4db1601bd3eb27013): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.29 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=9bc4f4c5895625241b21a0d6fec07b58): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=8ecb236ce42cf5d46a56d6bcf0aec2c4): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.27 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=814d7db18f84b2c4ab70016ae59c67ad): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=fd7f3d1b80b8393448476103aa2baee7): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=810aadc2b99e8d647854df0cbdb27c3e): Total: 0.004 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=837413c924b73f747bea6be5b92a8cf8): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=9bfd1d9aab7db684ab2a36c4cb2e4f42): Total: 0.004 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=f38f3690a5219c340b199cf004193850): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=879808c1b83f7484cb8f1424cbe68409): Total: 0.004 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=b5d6ea6d7bf35d54897e1f8156c2d622): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=1afeee15a27a1de419c45e8cbf515c1f): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=d57859fe6186bb54a9bb64179ebfd5bd): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=45dff04a6d7c6384283587ce6185f7f7): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=8e56986b12ff24448b582acbcf8ec0ab): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=849bc67197b821a44963ae84379393ee): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.22 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=abaaeea933bef214c8815f696462eecb): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=d4c7279d1782f5e4684c150058fb8141): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=388cef0174b4c1741a64f775c5bf5dcd): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=2cf557e64cb07724f8ea61bd4a5251b3): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.28 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=a0f00ef2720550641a35d20762e34bee): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=d23560860e038bb49826f6fe28533200): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=d649bd064db833844bfb1a9edaf4d3af): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=b780167e541fd1342992252a3d23df99): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=0a025a25405266c44927342f97b01a74): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=ffeae4d90d8603f4aafba59b2bad5ec2): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=dda7db3ca1ceb0e49aa144c3de013035): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.21 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=8e88c7ea36fd57540b9730b9df6103b5): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=e081089c3025d3c4db9c5acdbe86658d): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.22 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=400a509aee5b3484ea551bde1104918f): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=cea4a058f00118c43a01e529ab6e7c76): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.21 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=2270370bf582ecd4abea424df006618e): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=e9fd578e765e9a344acc29cee4cead4a): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.26 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=136eb4911d006b246b3cc2b5579481b5): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=03967a6f77e135c459e963236f960261): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.25 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=559b4860bbd04d840a15c5d4714f0555): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=0f48d9edba9ccef4c89f953fea3e88c5): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.22 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=550ea62df29af6a449844f386f15c832): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=e12b33cb40941e646a221391a293d4a6): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=2875f71d7eedebd46b20fc56d4b4f4f5): Total: 0.004 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=eb205ea028e876448a9de5b532e7ea95): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=0e720c35fbbea6048b9f8fa3e9b48df0): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=8b6a97e31a7061043aaf7d186a368c59): Total: 0.010 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=30a131face81e0744b89cc6420474b8f): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=af4bc4477d9829a4e9ed697fd9c85e9f): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=4f4dab56b9d0e364ab815c7cdb87c27d): Total: 0.004 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=22261d5a79d2c9945a6a4939244d0b5f): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=1659bcca36f08ea4087433570ddddf84): Total: 0.004 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.24 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=17da7f0427b5da64fb391fb170ebf3e8): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=284fb0bd797c7064d92011bd710b9ec2): Total: 0.004 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=5a6c3a739cf3f254bbcd52516679c0a7): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=1995105461b12364e9eefbadc25c8d4e): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=f1bd1b153ad81384a88079395e5e11da): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=771b3a4f8cb81ea42b4a200725a070af): Total: 0.004 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=158e4e67af8147a47a938f10c20b0b69): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=e28e9bfec45dd9c49adaac26b28eb6d0): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=6316dab7de8cdad4593836d4959e3c88): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=c12d08923bd611242a18dc3ace5bd2c6): Total: 0.004 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.25 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=58002be103f4694449d21ecd8acf3ce8): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=bc564819bd17666408d632af707df222): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.26 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=a051749430ac25540ad3e405eb610799): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=32ac304f80b8ef440a25eae2e274bed6): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.36 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=4ce38f220bcd0af4d88f04da58adf81c): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=6ec56bde74d07a544a209d035fb50fb2): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.21 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=ca050d10cc11d8140a09950e39943af2): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=c8400524eee3b6548b1bbd0f4edf1ac7): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=ddea36bb3f8d04c44a55551aab8089a2): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=8b46f518ab101a149b96232d552f55bd): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=262fc14d19d76db4d8ef8644ac09698c): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=6b848addd8803874a9f43f09c89569bd): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.16 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=11e3e3302f06b214593ec700aa00aeae): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.21 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=159f8219a7d0aa74688457dc6b3c2ea3): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=a421eb631f871c241aac5fb3df9b5e28): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.23 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=28a696fd6419d834fb2bb02cf19f2888): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=49d7b0fbc9f603e4a9004925f8f52a40): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=1fa7a7e25c5df5e4e8be72b5cec756a8): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=97a8b4d458a2bd842a95898705ca6d6e): Total: 0.010 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=13d058503f4a7ed42b8e88142c297e56): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=5de69f3dddbda174094e8dc43a2e5111): Total: 0.010 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.22 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=45c6d2f585d782a40b9b6e16f7d16466): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=d7c575259af49ea47ac483b3998a4a2a): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.23 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=77dafbcaee2e484428b51e5c2b8519ae): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=df4e928960e71fe49bd0e1dd2572cd76): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=ad9167c86a31a184eac9e558809d9d79): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=1a354c1cba8f1e549957b4b3603a9935): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.22 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=fe44e544b858e1b4895d7d19b7a5ad2c): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=62df9688ff5c05f469ea2834ad8bf42c): Total: 0.008 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=e22c94aa2f073a443b926f24b9596a16): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=65fc666c0a47e4146abd44fd0a7d8362): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=dc286e36f1f973346a87b515930bd6a1): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.21 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=d41d7e3838beba14ab7c254ae6b14805): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=16f07e436120f594cbf75556a4f22096): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.22 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=84b808dabc8de934b8906a8c67fdd80f): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.19 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=57374e600116d654cab48eb8b9784495): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.23 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=686d010a4edf1144ba8289bd23ae3ba8): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=ddd6727985ee03a4c9a0952b4811bf36): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.23 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=4d605ac14c2b89444a5eb1d5657dbe07): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.28 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=96eeebb4fbfa7764e903b4b70d929254): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.23 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=be889361f50af4e43a7c6463083b07cc): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=c6d940f01b0680848b9533761480733e): Total: 0.006 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.21 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=c1fb7d74fb051974da3697f98aacb654): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.18 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=2c0a681a5a779f1489b5591ca4fc2c3e): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.27 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=95f5a7ab7ea6f664b9546d1b41ae9503): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=0e2e0e2ed586c2e43831c8c742400814): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.21 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=f45910aeb8bf3844e98f983f90830dec): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=74c282fcd4cb22e48b8dc8ebcc3031d0): Total: 0.005 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=c1b58ecc46d5e1146aa11bdd08b6dfe5): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Refreshing native plugins compatible for Editor in 0.27 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=8d7f316769f2b5a488fe594db9d3f043): Total: 0.007 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Materials/PostProcess.asset using Guid(3713f7d285c9c7a49a5d86914d7c58cd) (NativeFormatImporter) -> (artifact id: '5584abd61be1ece98b920614cad31aed') in 0.0014948 seconds
+Refreshing native plugins compatible for Editor in 0.20 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=5e2019c4a6d298a4aa4d87204b51475f): Total: 0.013 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Materials/Strap.mat using Guid(00c6849f66e7cea42a46f1a3d532268d) (NativeFormatImporter) -> (artifact id: 'fd4a1192df55564d6940be49dabda3c0') in 0.0010515 seconds
+Start importing Assets/Materials/RockFace.mat using Guid(20feca320ca84224f91677df67ad8a33) (NativeFormatImporter) -> (artifact id: 'af99f3ad5c1522112af82fd069e3d1e0') in 0.0007528 seconds
+Start importing Assets/Materials/BuildingDoor.mat using Guid(b06671c55b5bf274aa25b25756ae21b2) (NativeFormatImporter) -> (artifact id: 'b711b32f0881ba745461345730b90916') in 0.0007136 seconds
+Start importing Assets/Materials/StoneLayer.terrainlayer using Guid(31d72cb415d843f468db33c3cfb0db65) (NativeFormatImporter) -> (artifact id: '8cd26d4ace0e484059fa886189128804') in 0.0009161 seconds
+Start importing Assets/Materials/CarChrome.mat using Guid(5181d6af596b2d34b8db1d35ae4fbf9f) (NativeFormatImporter) -> (artifact id: '35ccd2d9ffe9a182179cdaaa6a6510b1') in 0.0016608 seconds
+Start importing Assets/Materials/GateFlag.mat using Guid(71c8cfb3a8e16b640a9c7c9541e5ef41) (NativeFormatImporter) -> (artifact id: 'f6e8deea30541113fad16801797db7d3') in 0.0009342 seconds
+Start importing Assets/Materials/Water.mat using Guid(717b89b808f6c8449957739db95e4c21) (NativeFormatImporter) -> (artifact id: '3193bf70ca79b2b05d2b027364c81dd9') in 0.0007561 seconds
+Start importing Assets/Materials/Balloon3.mat using Guid(717d7ef4e15a17c409906196df219047) (NativeFormatImporter) -> (artifact id: '2ecb15728c5283cc8e1692c2a4d0c72d') in 0.0007787 seconds
+Start importing Assets/Materials/Lens.mat using Guid(81ff0bb9fe9070f43acf7074834e506b) (NativeFormatImporter) -> (artifact id: 'bdcdfcda4d215504538378eaa60bc887') in 0.0008785 seconds
+Start importing Assets/Materials/CheckerBlack.mat using Guid(a1558dd722585774cab33a4700570dff) (NativeFormatImporter) -> (artifact id: 'e68b98fe8f12df62530c159cab52cc95') in 0.0007583 seconds
+Start importing Assets/Materials/BalloonString.mat using Guid(324b14a86465366468b894e4e97642af) (NativeFormatImporter) -> (artifact id: '5ae9d9d021a67291b26df8d6a64b44f2') in 0.0007091 seconds
+Start importing Assets/Materials/Hay.mat using Guid(821b9385bc1f59c46aef4ecb49e1a483) (NativeFormatImporter) -> (artifact id: '48cf305a4648f6e8fe4c08be04e90a58') in 0.000706 seconds
+Start importing Assets/Materials/Capacitor.mat using Guid(a2aaba93509c28e4b88602cb2980e2f4) (NativeFormatImporter) -> (artifact id: 'abdd3b67f1f35e8f2cd3258f7f9d1987') in 0.0007089 seconds
+Start importing Assets/Materials/Balloon4.mat using Guid(b2297146100da744ba20685640689f6b) (NativeFormatImporter) -> (artifact id: '2d2396e1f0773137e06268e337943a21') in 0.0006472 seconds
+Start importing Assets/Materials/GateFeet.mat using Guid(c2f5da9f75b5eb044bb97b7d76c553ca) (NativeFormatImporter) -> (artifact id: '212fad36543199d5cfe1f86201e042fc') in 0.0006481 seconds
+Start importing Assets/Materials/DesertScrub.mat using Guid(03d9b095c771dc341aae541f7113cbbc) (NativeFormatImporter) -> (artifact id: '6cb41e62b2e13ab73dcaa3fd9849113a') in 0.0006758 seconds
+Start importing Assets/Materials/MotorSlot.mat using Guid(2356eeaf807e0e14895112f6ce12ab25) (NativeFormatImporter) -> (artifact id: '1e33bcf90fd1e56cd88b68bd802832d5') in 0.000668 seconds
+Start importing Assets/Materials/Steel.mat using Guid(73abd94d13127a544b30827603bc17b0) (NativeFormatImporter) -> (artifact id: '4e6e2d2e6ef200990507463509be0e36') in 0.0006934 seconds
+Start importing Assets/Materials/CarTrim.mat using Guid(f38fe5a6cac19ef448421436d55bb7b5) (NativeFormatImporter) -> (artifact id: 'f1bedc750b25c56856014609191e8eb1') in 0.0006352 seconds
+Start importing Assets/Materials/BuildingWindow.mat using Guid(04e68e1ab77a92046babae8ceabbd3d1) (NativeFormatImporter) -> (artifact id: '083aa126a5765dc3d1af0766da18eb47') in 0.0006399 seconds
+Start importing Assets/Materials/CarPaint_1452D1.mat using Guid(442ec5e9269938445b2a960abbfccbea) (NativeFormatImporter) -> (artifact id: 'b0b5b3cc54b9c73e249e6b3b1066cf15') in 0.0007454 seconds
+Start importing Assets/Materials/PaintWhite.mat using Guid(542a4105998c0864c81eeee14c266c44) (NativeFormatImporter) -> (artifact id: '14561e383f8268814f696c16a7ca3985') in 0.0007853 seconds
+Start importing Assets/Materials/TargetRed.mat using Guid(740584df441817a4f82e4f9eef184179) (NativeFormatImporter) -> (artifact id: '9f50f8ec231c6effb7bd6411cb977d3f') in 0.0016698 seconds
+Start importing Assets/Materials/TargetWhite.mat using Guid(c457f4134bf92034d8c7892284ab4eab) (NativeFormatImporter) -> (artifact id: 'ebb6a5ec64b932df1c034d6ed3ee1dda') in 0.0008007 seconds
+Start importing Assets/Materials/Asphalt.mat using Guid(c45caf823d6ba91499a2f0261071ba87) (NativeFormatImporter) -> (artifact id: 'adb2054d3be75a6097c0883c0e7f9cc2') in 0.0007614 seconds
+Start importing Assets/Materials/CarTire.mat using Guid(d4be7e647e656e84c8342005a4fbdbba) (NativeFormatImporter) -> (artifact id: 'f0840a0367bb482ea4bec504e73ba0f2') in 0.0006822 seconds
+Start importing Assets/Materials/RawConcrete.mat using Guid(65d29e29e3bc4aa4ba2990f58671a6eb) (NativeFormatImporter) -> (artifact id: '7d1aa5b3e26a8fa334c2913d7f1848cf') in 0.0006893 seconds
+Start importing Assets/Materials/CarGlass.mat using Guid(653a3fae146ddda499dd5f5c88ef25e1) (NativeFormatImporter) -> (artifact id: 'a900f5bbe6e43be7d8e92f13e1d559d0') in 0.0006959 seconds
+Start importing Assets/Materials/CarTaillight.mat using Guid(75f8f5b944f6b9245979ce1b16a89b99) (NativeFormatImporter) -> (artifact id: '0cc5839ea7880dae9027251ee0476e06') in 0.0006937 seconds
+Start importing Assets/Materials/Block.mat using Guid(758c45dfd79334c41860267fa5f20d89) (NativeFormatImporter) -> (artifact id: '3fea3ce6b9d00a2a0cfb941f256f1ee1') in 0.0006806 seconds
+Start importing Assets/Materials/MotorBlack.mat using Guid(950f942882765c94089cb4fa70a815e3) (NativeFormatImporter) -> (artifact id: '80480ffc1f438ef995ed86cdb4642aa3') in 0.000663 seconds
+Start importing Assets/Materials/CarBumper.mat using Guid(c5e595f1cf21d6e46addac7eca2e0cb4) (NativeFormatImporter) -> (artifact id: 'f73f1571b5da7991aff986fd85cf2008') in 0.0006366 seconds
+Start importing Assets/Materials/Container2.mat using Guid(e547075a79acf194ba8ee88e10a878f5) (NativeFormatImporter) -> (artifact id: '6ab27ce67691c6221064a4651f2d1f9e') in 0.0006874 seconds
+Start importing Assets/Materials/Carbon.mat using Guid(06af7e44e8c629e41b4ba1a86c8e0493) (NativeFormatImporter) -> (artifact id: 'e3f40a9cc391a10351cffe395ab0ad6e') in 0.0007618 seconds
+Start importing Assets/Materials/Led.mat using Guid(66ad307ebc09634428c5247720ef6ceb) (NativeFormatImporter) -> (artifact id: '5bdf919b41ee58924dde379a145ac32c') in 0.0006811 seconds
+Start importing Assets/Materials/GrassLayer.terrainlayer using Guid(963067b7c6b9f16409c5c58df22cef2f) (NativeFormatImporter) -> (artifact id: 'b403868d27256fbe7891b09959a6b761') in 0.0008052 seconds
+Start importing Assets/Materials/Canopy.mat using Guid(17f240314486556439aeeabb69f384cd) (NativeFormatImporter) -> (artifact id: 'ae4c610c0716f76797a2f13c680edaab') in 0.0007489 seconds
+Start importing Assets/Materials/Pcb.mat using Guid(77f5bc031099ca041a7ff5d0a57949cc) (NativeFormatImporter) -> (artifact id: 'cdf8a3c6a9ca59bdb51d862ddf70b401') in 0.000734 seconds
+Start importing Assets/Materials/BarrelRed.mat using Guid(97ff681698cb7b747ba5b774b84ef10b) (NativeFormatImporter) -> (artifact id: '18a2ce7e229d0cd392ab23dfbb717126') in 0.0009397 seconds
+Start importing Assets/Materials/Concrete.mat using Guid(085a8ef7a6e471c48b2f2eab6f677d88) (NativeFormatImporter) -> (artifact id: '15d6f77fc11ab899f5c6e49430b1c3b4') in 0.0012935 seconds
+Start importing Assets/Materials/Container.mat using Guid(18b520fe0fcb21a46993028a4f2689ae) (NativeFormatImporter) -> (artifact id: '275b95a3a648401bfe9a54c607601a78') in 0.0011031 seconds
+Start importing Assets/Materials/HoverZone.mat using Guid(186a69101b0f32e418acc29c6ecfd537) (NativeFormatImporter) -> (artifact id: 'f66dc362e53bac17b6b38ba28d4b871f') in 0.0008506 seconds
+Start importing Assets/Materials/DryGrassLayer.terrainlayer using Guid(683b012214236a14384c2aafebf18922) (NativeFormatImporter) -> (artifact id: 'ff0c5d17412a8bd59f014274ca0b3208') in 0.0008132 seconds
+Start importing Assets/Materials/Balloon2.mat using Guid(78903a6088d33114cb70bca6e9c09198) (NativeFormatImporter) -> (artifact id: 'c02ccb9a364f2d3c296f8bbf4eaffc30') in 0.000783 seconds
+Start importing Assets/Materials/Sky.mat using Guid(78ed6ed77864c6f40ad8b14faa822d05) (NativeFormatImporter) -> (artifact id: 'a8a646fab4a60beb3ff4fe8453430bb8') in 0.0006608 seconds
+Start importing Assets/Materials/Wall.mat using Guid(a823f5b0c21b67e41ae127dd88a73e16) (NativeFormatImporter) -> (artifact id: '27b0155cba2d2cf81da3f276f3d89110') in 0.0007026 seconds
+Start importing Assets/Materials/Wire.mat using Guid(b82883e2e930c0943a2cdf7e9629a284) (NativeFormatImporter) -> (artifact id: 'da68aa4390814623092bddc6c9ef56ea') in 0.0006958 seconds
+Start importing Assets/Materials/Leaves2.mat using Guid(c8ef4ba1517193a4d8dcb20bd9b2949e) (NativeFormatImporter) -> (artifact id: 'c172aa313716bcfd5d73ec4313ebbb1e') in 0.0006522 seconds
+Start importing Assets/Materials/Balloon0.mat using Guid(192274b14cf1c15448667bb9d19df30b) (NativeFormatImporter) -> (artifact id: '1e6342d0a766068fd6766139d702286b') in 0.0006505 seconds
+Start importing Assets/Materials/Balloon1.mat using Guid(19cb5ee1a22ff2a49a58a70d9c462228) (NativeFormatImporter) -> (artifact id: 'de2f372a0c7899664e16c0f6404c8614') in 0.0007046 seconds
+Start importing Assets/Materials/Leaves.mat using Guid(297f4c6947a0f834e848d6b3541ca0b7) (NativeFormatImporter) -> (artifact id: '40b46efa46127922b8cd1c66a5342061') in 0.0006696 seconds
+Start importing Assets/Materials/PropBlade.mat using Guid(493a7f97658b5f248beb9de686f32af2) (NativeFormatImporter) -> (artifact id: '9cec4ffb93780f8e2ad57c235a333060') in 0.0006911 seconds
+Start importing Assets/Materials/Cone.mat using Guid(59896b388a52763489e4a9350fb0b07e) (NativeFormatImporter) -> (artifact id: '5a59114b27e1e6ec846f048b003f75ff') in 0.000697 seconds
+Start importing Assets/Materials/PylonWhite.mat using Guid(89d828edfd2c3cb478bfe7001b50eff7) (NativeFormatImporter) -> (artifact id: '7f101b3ed43653262edfd0a6d7a2d853') in 0.0006374 seconds
+Start importing Assets/Materials/CarHeadlight.mat using Guid(99d8132b095f3bc469084611dffe0bac) (NativeFormatImporter) -> (artifact id: '3f23a606203ea4339c1c759193f279a5') in 0.0007665 seconds
+Start importing Assets/Materials/CarPlate.mat using Guid(c9e3c607eac7f1f489bb4bfbff7e956e) (NativeFormatImporter) -> (artifact id: '22291b0d4bfaaeaafaa1b81968b9fc2e') in 0.0007218 seconds
+Start importing Assets/Materials/ParkAccent.mat using Guid(e9e0539f73635d64dac4b9578fb7aa5b) (NativeFormatImporter) -> (artifact id: '87d941403d9813dfd4c806ca2f2e0baf') in 0.0006617 seconds
+Start importing Assets/Materials/CityWall.mat using Guid(e9e3937db1bc931418f5787ef0bdda6c) (NativeFormatImporter) -> (artifact id: 'cb7e25c00b91cfc7227d79b0c41f1ab5') in 0.0008528 seconds
+Start importing Assets/Materials/Fence.mat using Guid(1ad0bb2adb64aa64ebbf30a05291e573) (NativeFormatImporter) -> (artifact id: 'c566ff28d894aa095f6633bbb5628068') in 0.0016635 seconds
+Start importing Assets/Materials/DirtLayer.terrainlayer using Guid(1a915a7ed2622fa43915fb7c5326c8e1) (NativeFormatImporter) -> (artifact id: 'b8d0319f17e1230043e0c4e9c21e1405') in 0.0010709 seconds
+Start importing Assets/Materials/TargetMarker.mat using Guid(4a737fc29493707489388c1b7d3d0545) (NativeFormatImporter) -> (artifact id: '39ee122488d1c458ff2a1d002f2d38cb') in 0.0007443 seconds
+Start importing Assets/Materials/TyreWhite.mat using Guid(6ab8e0644c7da5f46b507bee6961c80d) (NativeFormatImporter) -> (artifact id: 'e3ed64a4ef7dadc3a307f4eec65b01aa') in 0.0007031 seconds
+Start importing Assets/Materials/GravelLayer.terrainlayer using Guid(9af56e47782067d44a3f93394f0ea68d) (NativeFormatImporter) -> (artifact id: 'cd80b74f6ee73e094046deaf0eb9038a') in 0.0006733 seconds
+Start importing Assets/Materials/Xt60.mat using Guid(aad2ba4911e77af41b11b30c8ada4565) (NativeFormatImporter) -> (artifact id: '542e4a6b144ec00c29676fb43f0293b8') in 0.0006748 seconds
+Start importing Assets/Materials/PropDisc.mat using Guid(ea9755c0e211d3844aca6c5a16b8fead) (NativeFormatImporter) -> (artifact id: '48d261dfbf89908544226162cf1f9339') in 0.0007073 seconds
+Start importing Assets/Materials/Tyre.mat using Guid(ea884240487b7f447b91ff365d9a76c5) (NativeFormatImporter) -> (artifact id: 'c6270e29414ba5e5136284e52618ccc8') in 0.0007189 seconds
+Start importing Assets/Materials/GateTube.mat using Guid(5b8625f30afb0294d8a3ecc68fea07db) (NativeFormatImporter) -> (artifact id: 'dcdf5e1d14db4dc56fcd0379cdbd88ba') in 0.0007293 seconds
+Start importing Assets/Materials/Tpu.mat using Guid(6b125734fa468e54e960ba815e8b8b47) (NativeFormatImporter) -> (artifact id: 'cd44331590cb44320f9fc058cfc12c3a') in 0.000674 seconds
+Start importing Assets/Materials/Silver.mat using Guid(7bc9ec9bc00490a49a248265ba1a749b) (NativeFormatImporter) -> (artifact id: 'f36386c9f98974a7a8234181cf4e7b54') in 0.0006529 seconds
+Start importing Assets/Materials/LandingPad.mat using Guid(bb1d031b137e62f4e8f8e0bee045da96) (NativeFormatImporter) -> (artifact id: 'd4d6074730996ddb339bb4081167c2de') in 0.0006566 seconds
+Start importing Assets/Materials/Rust.mat using Guid(cbb99809eaa7f284c9d3369beb543a1f) (NativeFormatImporter) -> (artifact id: 'eec98382ccbc3111c7cd845a78311711') in 0.0006785 seconds
+Start importing Assets/Materials/Antenna.mat using Guid(eb0ec368bc516cb4dafbc3cbbf9a380c) (NativeFormatImporter) -> (artifact id: '62c3dab8a3583ed85a086add8eb0cac4') in 0.0007066 seconds
+Start importing Assets/Materials/CarPaint_D1120D.mat using Guid(3cfca6764dbcb804cb4e20eaf9bb7a73) (NativeFormatImporter) -> (artifact id: '5707680e502f0d892650777d26f61cf6') in 0.0007546 seconds
+Start importing Assets/Materials/BuildingTrim.mat using Guid(4c605dc5ca97a8241a5ea7e850c2f74b) (NativeFormatImporter) -> (artifact id: 'ccd2f73591baf4123d91db5d58b730d7') in 0.0006881 seconds
+Start importing Assets/Materials/Battery.mat using Guid(4cce692c9e31fb14e9c66d2448892626) (NativeFormatImporter) -> (artifact id: 'f6aeadd7e46a44c5ba060fe7e01b3217') in 0.0006934 seconds
+Start importing Assets/Materials/Bench.mat using Guid(6c21b0efbb066a9498d6f6b07855f773) (NativeFormatImporter) -> (artifact id: '11f5c68dad0de8100e5d36b3b26d54ec') in 0.0007458 seconds
+Start importing Assets/Materials/FlagBlue.mat using Guid(6cf89aae7b4c0694bb1b561e955f6ad9) (NativeFormatImporter) -> (artifact id: 'b3c186d45bccabb0c7db3f5531d758c6') in 0.0012444 seconds
+Start importing Assets/Materials/BarrelBlue.mat using Guid(6c9dc388f9ead5541ba1136f3d58cfd6) (NativeFormatImporter) -> (artifact id: '9e4875e85147c911abbe72782846d918') in 0.0011384 seconds
+Start importing Assets/Materials/RollDoor.mat using Guid(7cb5ebee007400b49a4fe09ad4495dde) (NativeFormatImporter) -> (artifact id: 'cab80cee9036fb9a1fa5fc2dd3615f16') in 0.0008416 seconds
+Start importing Assets/Materials/TpuAccent.mat using Guid(ac333308a0009d241918d541e66b7746) (NativeFormatImporter) -> (artifact id: '03549ea93a7d6f7c17a2b0b5e822ac63') in 0.0007348 seconds
+Start importing Assets/Materials/Anodized.mat using Guid(fcb3d06ca664ac442bcc2f68bf96b779) (NativeFormatImporter) -> (artifact id: 'e004a3f103d3cab3fb2496ec3e928571') in 0.0007357 seconds
+Start importing Assets/Materials/CarPaint_EBC70D.mat using Guid(0d18c2af06d27334a83ceccbc6c09c60) (NativeFormatImporter) -> (artifact id: 'add2ec6915bc887482882ead32150bb2') in 0.0007256 seconds
+Start importing Assets/Materials/SpoilDirt.mat using Guid(4d5cb533d5d015b489537a4690ea799c) (NativeFormatImporter) -> (artifact id: '262c37e7eeb57eabbef11a5724da220e') in 0.0006866 seconds
+Start importing Assets/Materials/Bark.mat using Guid(5dee6ed0b116e2449af4ed36ea53c040) (NativeFormatImporter) -> (artifact id: '93d2694b40f54b51811912f5b676b7bd') in 0.0006784 seconds
+Start importing Assets/Materials/CarRim.mat using Guid(9d43a35336f8ef04daf3490ef3e8540a) (NativeFormatImporter) -> (artifact id: '5cc8d62ff3109367026413685685d2b2') in 0.0006717 seconds
+Start importing Assets/Materials/SafetyNet.mat using Guid(ad6879beca5ade241a6613c088f72b41) (NativeFormatImporter) -> (artifact id: 'a709f01d4c75b5bae91bc4e1c3e1f3c5') in 0.0006575 seconds
+Start importing Assets/Materials/Crate.mat using Guid(dda652825114b4247b72f2f6133f7229) (NativeFormatImporter) -> (artifact id: '4fce858fc1c1e35b7edd9e43015aff5e') in 0.0007384 seconds
+Start importing Assets/Materials/Roof.mat using Guid(ed5e1519be5818b4cb70fbed7ae8a03a) (NativeFormatImporter) -> (artifact id: 'c3bdb999d820fb5cfe1beb7aff2fc6cb') in 0.0007188 seconds
+Start importing Assets/Materials/FlagRed.mat using Guid(fd9c1adb7448d3e4b818e759413b54bb) (NativeFormatImporter) -> (artifact id: '9be70a8e2027d78a6fbc69150743e460') in 0.0007588 seconds
+Start importing Assets/Materials/Concrete2.mat using Guid(6eec89d616308614f849224cb1fc1147) (NativeFormatImporter) -> (artifact id: '27dd111948141163dbd30ba261269c03') in 0.0007014 seconds
+Start importing Assets/Materials/HazardStripe.mat using Guid(0fbb094d4f63dd541a8e75b9428f8138) (NativeFormatImporter) -> (artifact id: '3e892029b22fa00a406c0f43774f1690') in 0.0006871 seconds
+Start importing Assets/Materials/QuarryRock.mat using Guid(2fc7640f990a1ea4e9b4d280e7ded028) (NativeFormatImporter) -> (artifact id: 'ec00e57b87a7e1ba6ae17f592c32f6b6') in 0.0006649 seconds
+Start importing Assets/Materials/SandLayer.terrainlayer using Guid(4fc7aa21ee3c0a747b4d8ac8acce78d9) (NativeFormatImporter) -> (artifact id: 'e651750325704c82f92e3929dc8796b3') in 0.0007281 seconds
+Start importing Assets/Materials/WireRed.mat using Guid(6f086ac6f89ec184dbf439a234f13fbc) (NativeFormatImporter) -> (artifact id: '0fc18227a741683c1aac61a268192f48') in 0.0007277 seconds
+Start importing Assets/Materials/FlagYellow.mat using Guid(6fbd6b2906a32fa43bb27d1a16b781da) (NativeFormatImporter) -> (artifact id: 'a8ecf6285f22b1a6c7d99e6fdea5a902') in 0.0010631 seconds
+Start importing Assets/Materials/PylonRed.mat using Guid(8ffd8396175d2004db804057b8e02dd3) (NativeFormatImporter) -> (artifact id: 'f4cc3c1880a28f8a869b5b5fd9e13d07') in 0.0013703 seconds
+Start importing Assets/Materials/WarehouseWall.mat using Guid(df2cf105602bb434ca348f45e9cf9481) (NativeFormatImporter) -> (artifact id: 'b14bee94fc4793ef9b1bc5328cf39e54') in 0.0009908 seconds
+Start importing Assets/Materials/PostProcess.asset using Guid(3713f7d285c9c7a49a5d86914d7c58cd) (NativeFormatImporter) -> (artifact id: '0d1a3c32dbec526143172dc6226d1d6f') in 0.0008522 seconds
+Start importing Assets/Materials/Terrain.asset using Guid(f87bdb58fa9b840479864d30834c8afc) (NativeFormatImporter) -> (artifact id: 'bbee06bd9aa2624580484719a06a6202') in 0.0008995 seconds
+Refreshing native plugins compatible for Editor in 0.30 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=7c5937d8f6cd0894088082a9460a5514): Total: 0.112 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+Start importing Assets/Scenes/Training.unity using Guid(b3d2ec5b9c0b41b499ba0e04599a2447) (DefaultImporter) -> (artifact id: '71ee03710bfb5117e08d2c0cf395d5bc') in 0.0006064 seconds
+Refreshing native plugins compatible for Editor in 0.31 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Asset Pipeline Refresh (id=091a78357cab00e448afa707a689d6a8): Total: 0.009 seconds - Initiated by StopAssetImportingV2(NoUpdateAssetOptions)
+<b>Drone Trainer</b>: scene built at Assets/Scenes/Training.unity. Press Play, throttle down, SPACE to arm.
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace ()
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[])
+UnityEngine.Logger:Log (UnityEngine.LogType,object)
+UnityEngine.Debug:Log (object)
+SceneBuilder:Build () (at Assets/Editor/SceneBuilder.cs:65)
+
+(Filename: Assets/Editor/SceneBuilder.cs Line: 65)
+
+Batchmode quit successfully invoked - shutting down!
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+[Licensing::IpcConnector] LicenseClient-b.chsafarov-notifications channel disconnected successfully.
+[Licensing::IpcConnector] LicenseClient-b.chsafarov channel disconnected successfully.
+AcceleratorClientConnectionCallback - disconnected - :0
+Cleanup mono
+Shut down.
+abort_threads: Failed aborting id: 0000000000007360, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000007834, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000007360, mono_thread_manage will ignore it
+
+abort_threads: Failed aborting id: 0000000000007834, mono_thread_manage will ignore it
+
+debugger-agent: Unable to listen on 3476
+Exiting batchmode successfully now!
+Exiting without the bug reporter. Application will terminate with return code 0
