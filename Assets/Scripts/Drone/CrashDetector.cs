@@ -13,6 +13,10 @@ public class CrashDetector : MonoBehaviour
     [Tooltip("Impacts between this and crashSpeed break a prop instead: the quad keeps flying, badly, until you reset")]
     public float propStrikeSpeed = 2.4f;
     public bool propDamage = true;
+    [Tooltip("Impact thresholds are multiplied by this on soil and grass - the terrain absorbs far more than asphalt")]
+    [Range(1f, 3f)] public float softGroundFactor = 1.7f;
+    [Tooltip("Multiplier for branches and leaves, which slow an impact rather than stopping it")]
+    [Range(1f, 3f)] public float foliageFactor = 1.15f;
     [Tooltip("Seconds resting upside down before it counts as a crash")]
     public float upsideDownTimeout = 1.5f;
     public bool autoReset = true;
@@ -58,9 +62,14 @@ public class CrashDetector : MonoBehaviour
         lastHit = root != null && root != transform ? root.name : c.collider.name;
         OnImpact?.Invoke(speed);
         if (Crashed || suppressCrashes) return;
-        if (speed > crashSpeed)
+
+        // What you hit matters as much as how fast. 5 m/s into long grass is a hard landing a real
+        // quad walks away from; the same 5 m/s into a concrete wall is over. The thresholds were
+        // flat before, so grass was as lethal as asphalt.
+        float tough = SurfaceToughness(c.collider);
+        if (speed > crashSpeed * tough)
             Crash($"CRASH  ({speed:0.0} m/s)");
-        else if (propDamage && speed > propStrikeSpeed && !drone.Damaged && fc.Armed)
+        else if (propDamage && speed > propStrikeSpeed * tough && !drone.Damaged && fc.Armed)
         {
             // A clipped gate or a hard landing: the corner nearest the actual impact takes the hit.
             Vector3 impact = c.contactCount > 0 ? c.GetContact(0).point : transform.position;
@@ -69,6 +78,24 @@ public class CrashDetector : MonoBehaviour
             Fx.Burst(impact, new Color(1f, 0.6f, 0.2f), 25, 4f, 0.03f, 0.6f);
             ShowMessage($"PROP STRIKE ({speed:0.0} m/s) - land and press R");
         }
+    }
+
+    /// <summary>
+    /// Multiplier on both impact thresholds for whatever was struck. 1 = the hard baseline
+    /// (asphalt, concrete, steel, cars, crates), which is what the tuned numbers assume.
+    /// </summary>
+    float SurfaceToughness(Collider hit)
+    {
+        // Ground: soil and grass absorb an enormous amount. A 5" quad dropped into a meadow at
+        // 7 m/s usually needs nothing more than the props straightening.
+        if (hit is TerrainCollider) return softGroundFactor;
+
+        // Foliage: thin branches and leaves snap and slow you rather than stopping you dead, but
+        // a trunk at speed is still a trunk.
+        var root = hit.transform.root;
+        if (root != null && (root.name == "Tree" || root.name == "Bush")) return foliageFactor;
+
+        return 1f;
     }
 
     void Update()
@@ -123,6 +150,16 @@ public class CrashDetector : MonoBehaviour
         fc.Disarm();
         ShowMessage(why);
         OnCrashed?.Invoke();
+    }
+
+    /// <summary>
+    /// Register a crash from outside - hazards that kill a drone without a survivable impact
+    /// (ditching in the pond, an RC-link failsafe at height) rather than a collision speed.
+    /// </summary>
+    public void ForceCrash(string why)
+    {
+        if (Crashed || suppressCrashes) return;
+        Crash(why);
     }
 
     public void Respawn()

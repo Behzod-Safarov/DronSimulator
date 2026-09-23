@@ -28,6 +28,7 @@ public class Osd : MonoBehaviour
     StickCalibrator calibrator;
     Wind wind;
     FpvCameraEffects fpvFx;
+    RcLink rcLink;
     Camera fpvCamera;
     Texture2D dot;
 
@@ -36,6 +37,7 @@ public class Osd : MonoBehaviour
         calibrator = new StickCalibrator(input);
         wind = FindFirstObjectByType<Wind>();
         fpvFx = FindFirstObjectByType<FpvCameraEffects>();
+        rcLink = drone != null ? drone.GetComponent<RcLink>() : null;
         if (fpvFx != null) fpvCamera = fpvFx.GetComponent<Camera>();
         LoadSettings();
     }
@@ -84,6 +86,34 @@ public class Osd : MonoBehaviour
         dot = Texture2D.whiteTexture;
     }
 
+    /// <summary>Compass bearing the wind is blowing FROM, the way a windsock or a METAR reads it.</summary>
+    static string WindBearing(Vector3 windVelocity)
+    {
+        var flat = new Vector2(windVelocity.x, windVelocity.z);
+        if (flat.magnitude < 0.05f) return "calm  ";
+        // Atan2(x, z) is the heading the air is moving towards; wind is named by where it comes from.
+        float from = Mathf.Repeat(Mathf.Atan2(flat.x, flat.y) * Mathf.Rad2Deg + 180f, 360f);
+        string[] pts = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
+        return $"from {from,3:0}° {pts[(int)((from + 22.5f) / 45f) % 8],-2}";
+    }
+
+    /// <summary>
+    /// Which way the wind is pushing, in the drone's own frame - the thing the pilot actually has
+    /// to correct for. A head/tailwind and a crosswind of the same speed need opposite inputs, and
+    /// a bare magnitude could not tell them apart.
+    /// </summary>
+    string WindPush(Vector3 windVelocity)
+    {
+        var flat = new Vector2(windVelocity.x, windVelocity.z);
+        if (flat.magnitude < 0.05f || drone == null) return "";
+        Vector3 local = drone.transform.InverseTransformDirection(new Vector3(flat.x, 0f, flat.y));
+        float deg = Mathf.Repeat(Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg, 360f);
+        // Named by where the wind PUSHES the drone, not where it comes from: that is the sense the
+        // correction has to be made in. Plain ASCII - the IMGUI font cannot be relied on for arrows.
+        string[] push = { "FWD", "FWD-R", "RIGHT", "AFT-R", "AFT", "AFT-L", "LEFT", "FWD-L" };
+        return "push " + push[(int)((deg + 22.5f) / 45f) % 8];
+    }
+
     void Panel(Rect r)
     {
         GUI.color = new Color(0, 0, 0, 0.55f);
@@ -117,10 +147,16 @@ public class Osd : MonoBehaviour
             sb.AppendLine($"ROLL {flightController.RollDeg,6:0}°  PITCH {flightController.PitchDeg,5:0}°");
             string batColor = drone.BatteryDead ? "#FF4040" : drone.BatteryFraction < 0.2f ? "#FFB040" : "#FFFFFF";
             sb.AppendLine($"<color={batColor}>BAT  {drone.BatteryVolts,5:0.0} V  {drone.BatteryCurrent,5:0.0} A  {drone.BatteryFraction * 100f,3:0} %</color>   {drone.FlightSeconds / 60f:0}:{drone.FlightSeconds % 60f:00}");
-            if (wind != null) sb.AppendLine($"WIND {drone.WindVelocity.magnitude,5:0.0} m/s");
+            if (wind != null) sb.AppendLine($"WIND {drone.WindVelocity.magnitude,5:0.0} m/s  {WindBearing(drone.WindVelocity)}  {WindPush(drone.WindVelocity)}");
+            if (rcLink != null && rcLink.enableFailsafe)
+            {
+                float lq = rcLink.Quality * 100f;
+                string lqColor = lq < 15f ? "#FF4040" : lq < 45f ? "#FFB040" : "#FFFFFF";
+                sb.AppendLine($"<color={lqColor}>LQ   {lq,3:0} %</color>");
+            }
             if (cameras != null) sb.AppendLine($"CAM  {cameras.CurrentName}    IN {(input != null ? input.Source : "-")}");
-            Panel(new Rect(pad, pad, 420, line * 8.6f));
-            GUI.Label(new Rect(pad + 8, pad + 4, 410, line * 9f), sb.ToString(), text);
+            Panel(new Rect(pad, pad, 470, line * 9.6f));
+            GUI.Label(new Rect(pad + 8, pad + 4, 460, line * 10f), sb.ToString(), text);
         }
 
         // --- Lesson panel (top-right) -----------------------------------------
@@ -200,6 +236,12 @@ public class Osd : MonoBehaviour
         {
             GUI.color = new Color(1f, 1f, 1f, 0.8f);
             GUI.Label(new Rect(0, h * 0.4f, w, big.fontSize * 1.5f), Loc.S("Throttle down, press SPACE / (A) to arm"), big);
+            GUI.color = Color.white;
+        }
+        else if (rcLink != null && rcLink.Warning && Mathf.Repeat(Time.time, 0.7f) < 0.42f)
+        {
+            GUI.color = new Color(1f, 0.45f, 0.35f);
+            GUI.Label(new Rect(0, h * 0.12f, w, big.fontSize * 1.2f), Loc.S("WEAK RC LINK - COME BACK / GET LINE OF SIGHT"), big);
             GUI.color = Color.white;
         }
         else if (drone != null && drone.BatteryFraction < 0.15f && Mathf.Repeat(Time.time, 1f) < 0.5f)

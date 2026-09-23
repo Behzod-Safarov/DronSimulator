@@ -32,16 +32,22 @@ public class DronePhysics : MonoBehaviour
     [Range(0.4f, 1f)] public float loadedSpeedFraction = 0.65f;
     [Tooltip("Thrust coefficient: thrust [N] = kT · ω² (ω in rad/s)")]
     public float kT = 1.71e-6f;
-    [Tooltip("Torque coefficient: drag torque [N·m] = kQ · ω²")]
-    public float kQ = 4.0e-8f;
+    // Calibrated against momentum theory rather than picked by feel: at 1571 gf/motor the ideal
+    // induced power is 336 W, so at a figure of merit of ~0.55 a real 5" prop needs ~610 W, i.e.
+    // kQ ~ 2.3e-8. The old 4.0e-8 drew 260 A at full throttle (a real 6S 5" peaks at 110-150 A)
+    // and produced roughly double the true yaw authority.
+    [Tooltip("Torque coefficient: drag torque [N·m] = kQ · ω². kQ/kT = 0.0135 m, in line with 5\" prop data")]
+    public float kQ = 2.3e-8f;
     [Tooltip("Prop + bell rotational inertia (kg·m²)")]
     public float propInertia = 6.5e-6f;
     public float propRadius = 0.0648f;
     public int propBlades = 3;
     public float spoolUpTimeConstant = 0.025f;
     public float spoolDownTimeConstant = 0.045f;
+    // Whole drivetrain (ESC switching + copper/iron losses) at the hover operating point, where
+    // small motors are well off their peak-efficiency point. 0.75 was optimistic.
     [Tooltip("Motor+ESC electrical efficiency at the operating point")]
-    [Range(0.4f, 1f)] public float electricalEfficiency = 0.75f;
+    [Range(0.4f, 1f)] public float electricalEfficiency = 0.62f;
     [Tooltip("Inflow coefficient: thrust falls as the prop moves into the air, thrust *= 1 - vAxial/(kInflow·ω)")]
     public float kInflow = 0.0145f;
     public bool groundEffect = true;
@@ -61,6 +67,12 @@ public class DronePhysics : MonoBehaviour
     public Vector3 bodyDragArea = new Vector3(0.010f, 0.035f, 0.009f);
     [Tooltip("Rotor H-force coefficient: F = -k · Σω · v_inplane")]
     public float rotorDragCoefficient = 5e-5f;
+    // Effective, not geometric: the props sit near the arm plane, barely above the centre of mass.
+    // This stands in for blade flapping, whose tip-path-plane tilt produces the same moment as the
+    // in-plane rotor force acting a few centimetres higher. 0.045 m puts ~12% of full pitch
+    // authority into holding attitude at 25 m/s, which is about the trim a real 5" quad needs.
+    [Tooltip("Height above the centre of mass at which the rotor H-force is applied, in metres")]
+    public float rotorMomentArm = 0.045f;
     public float angularDamping = 0.02f;
     public float airDensity = 1.225f;
 
@@ -280,14 +292,26 @@ public class DronePhysics : MonoBehaviour
         if (motorsOn) FlightSeconds += dt;
 
         // --- Aerodynamic drag ------------------------------------------------
-        Vector3 dragLocal = new Vector3(
+        // Body drag acts through the centre of mass.
+        Vector3 bodyDrag = new Vector3(
             -0.5f * airDensity * bodyDragArea.x * Mathf.Abs(airLocal.x) * airLocal.x,
             -0.5f * airDensity * bodyDragArea.y * Mathf.Abs(airLocal.y) * airLocal.y,
             -0.5f * airDensity * bodyDragArea.z * Mathf.Abs(airLocal.z) * airLocal.z);
-        // Rotor drag: props act like a linear damper in their plane.
-        dragLocal.x -= rotorDragCoefficient * sumOmega * airLocal.x;
-        dragLocal.z -= rotorDragCoefficient * sumOmega * airLocal.z;
-        rb.AddRelativeForce(dragLocal);
+        rb.AddRelativeForce(bodyDrag);
+
+        // Rotor drag (H-force): the props act like a linear damper in their own plane. Applied at
+        // the rotor plane rather than at the centre of mass, which is what produces the nose-up
+        // pitching moment every FPV pilot trims against in fast forward flight - a translating
+        // rotor sees more inflow on the advancing blade than the retreating one, the blades flap,
+        // and the tip-path plane tilts away from the direction of travel. Without this the quad was
+        // neutral at speed: you could point it at the horizon at 25 m/s and just leave the stick
+        // centred, which no real quad does.
+        Vector3 rotorDrag = new Vector3(
+            -rotorDragCoefficient * sumOmega * airLocal.x,
+            0f,
+            -rotorDragCoefficient * sumOmega * airLocal.z);
+        rb.AddForceAtPosition(transform.TransformDirection(rotorDrag),
+                              transform.TransformPoint(new Vector3(0f, rotorMomentArm, 0f)));
     }
 
     void Update()

@@ -53,7 +53,7 @@ public static class SceneBuilder
         var drone = BuildDrone(spawn);
         var cams = BuildCameras(drone.transform);
         var course = BuildCourse(terrain);
-        BuildTrainer(drone, cams, course);
+        BuildTrainer(drone, cams, course, terrain);
         BuildPostProcessing(cams);
 
         DynamicGI.UpdateEnvironment();
@@ -146,7 +146,9 @@ public static class SceneBuilder
         RenderSettings.reflectionIntensity = 1f;
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.ExponentialSquared;
-        RenderSettings.fogDensity = 0.0012f;
+        // 0.0009 rather than 0.0012: the horizon ridge now sits ~1.1 km out instead of 435 m, where
+        // the old density washed it to 13% of its own colour. This keeps it hazed but legible.
+        RenderSettings.fogDensity = 0.0009f;
         RenderSettings.fogColor = new Color(0.72f, 0.78f, 0.86f);
     }
 
@@ -249,6 +251,37 @@ public static class SceneBuilder
         return mat;
     }
 
+    /// <summary>
+    /// Alpha-cutout foliage material on DroneTrainer/FoliageSway, so the crown bends and flutters
+    /// with the live wind instead of standing rigid. Built here rather than through <see cref="Mat"/>
+    /// because that helper forces the Standard shader and returns early for anything else.
+    /// </summary>
+    public static Material FoliageMat(string name, Color color, Texture tex, float glossiness, float swayScale = 1f)
+    {
+        string path = $"{MatDir}/{name}.mat";
+        var shader = Shader.Find("DroneTrainer/FoliageSway");
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (mat == null)
+        {
+            mat = new Material(shader);
+            AssetDatabase.CreateAsset(mat, path);
+        }
+        else if (mat.shader != shader)
+        {
+            mat.shader = shader;
+        }
+        mat.color = color;
+        mat.mainTexture = tex;
+        mat.SetFloat("_Cutoff", 0.45f);
+        mat.SetFloat("_Glossiness", glossiness);
+        mat.SetFloat("_Metallic", 0f);
+        mat.SetFloat("_SwayScale", swayScale);
+        mat.renderQueue = (int)RenderQueue.AlphaTest;
+        mat.enableInstancing = true;
+        EditorUtility.SetDirty(mat);
+        return mat;
+    }
+
     // ------------------------------------------------------------------ terrain
 
     const float TerrainSize = 1000f;
@@ -256,7 +289,15 @@ public static class SceneBuilder
     // fractions of this, so every legacy term below is scaled by LegacyScale to keep its metres.
     const float TerrainHeight = 170f;
     const float LegacyScale = 80f / TerrainHeight;
-    const float GroundLevel = 1f;                 // metres of terrain below y = 0 at the flying field
+    // Headroom for everything carved BELOW the field, not a vertical offset: world height works
+    // out to h * TerrainHeight regardless of this value, because the terrain object is placed at
+    // -GroundLevel and the heightmap base is +GroundLevel/TerrainHeight. What it buys is room
+    // before Unity clamps the normalised heightmap at zero.
+    //
+    // It was 1 m against a 3.2 m pond basin and a 4.5 m quarry basin, so both were being clipped
+    // wherever local hills did not happen to lift the ground first - the pond ended up with no
+    // basin at all once it was levelled, and the quarry rim was losing its floor in places.
+    const float GroundLevel = 12f;
 
     static Terrain BuildTerrain()
     {
@@ -267,7 +308,11 @@ public static class SceneBuilder
             data = new TerrainData();
             AssetDatabase.CreateAsset(data, path);
         }
-        const int res = 513;
+        // 1025, not 513: over a 1 km terrain that halves the sample spacing from 1.95 m to 0.98 m,
+        // so the smallest representable ground feature drops from ~3.9 m to ~2.0 m. This is a sim
+        // whose whole syllabus is flown 1-3 m off the deck, where metre-scale relief is the main
+        // visual speed cue - at 513 the ground simply could not hold any of it.
+        const int res = 1025;
         data.heightmapResolution = res;
         data.size = new Vector3(TerrainSize, TerrainHeight, TerrainSize);
 
@@ -285,7 +330,11 @@ public static class SceneBuilder
         // Perlin hills read as smooth rounded blobs; a few relaxation passes (move height downhill
         // wherever the local slope exceeds a talus threshold) carve believable ridgelines and
         // drainage gullies without a hand-authored heightmap.
-        ThermalErode(hillsRaw, res, 25, 0.010f, 0.5f);
+        // Talus halved with the sample spacing: it is compared against the height difference
+        // between neighbouring cells, so keeping 0.010 at twice the resolution would have doubled
+        // the slope the erosion tolerates and washed the ridgelines out. 0.005 over a 0.98 m cell
+        // is the same ~41 deg repose angle 0.010 gave over a 1.95 m one.
+        ThermalErode(hillsRaw, res, 25, 0.005f, 0.5f);
 
         for (int y = 0; y < res; y++)
             for (int x = 0; x < res; x++)
@@ -298,15 +347,32 @@ public static class SceneBuilder
                 // Rock-scale roughness added AFTER erosion (it stands for already-weathered surface
                 // grain, not something erosion should itself smooth away). Rides everywhere `flat` allows.
                 float rock = (Mathf.PerlinNoise(4000f + wx * 0.05f, 300f + wz * 0.05f) - 0.5f) * 0.012f;
+                // Metre-scale surface grain, the detail the finer heightmap exists to carry: about
+                // +/-0.15 m over a 4 m wavelength, which is ordinary pasture undulation and reads
+                // as texture underneath you at low level. Four samples per wavelength at 0.98 m.
+                float grain = (Mathf.PerlinNoise(8200f + wx * 0.25f, 5400f + wz * 0.25f) - 0.5f) * (0.30f / TerrainHeight);
                 float flat = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 110f) / 150f));
                 float far = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 300f) / 200f));
                 float fieldMask = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 30f) / 60f));
-                float h = (hills * (0.06f + 0.25f * far) * flat + micro * fieldMask + rock * flat) * (1f - VenueBuilder.Flat(wx, wz)) * LegacyScale;
-                h += Mountains(wx, wz, r);
+                // Fade all relief out to nothing by the terrain boundary. The horizon is now carried
+                // by the BuildBackdrop ring mesh, which starts just outside this edge at y = 0, so the
+                // terrain has to arrive there flat for the two to meet without a step - including at
+                // the corners, which reach r = 707 m and so fade out completely.
+                float rim = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 380f) / 120f));
+                float h = (hills * (0.06f + 0.25f * far) * flat * rim + micro * fieldMask + rock * flat * rim) * (1f - VenueBuilder.Flat(wx, wz)) * LegacyScale
+                        + grain * flat * (1f - VenueBuilder.Flat(wx, wz));
                 h -= VenueBuilder.Pond(wx, wz) * 0.04f * LegacyScale; // carve the farm pond basin (~3.2 m deep)
                 h += VenueBuilder.HeightOffset(wx, wz) / TerrainHeight; // biome shaping: mesa, dunes, rubble mounds, quarry basin
                 heights[y, x] = GroundLevel / TerrainHeight + h;
             }
+        // Guard against silent clamping: Unity stores heights normalised to 0..1, so anything
+        // carved deeper than GroundLevel is quietly flattened instead of erroring.
+        float hMin = 1f, hMax = 0f;
+        for (int y = 0; y < res; y++)
+            for (int x = 0; x < res; x++) { hMin = Mathf.Min(hMin, heights[y, x]); hMax = Mathf.Max(hMax, heights[y, x]); }
+        Debug.Log($"<b>Drone Trainer</b>: terrain spans {(hMin * TerrainHeight - GroundLevel):0.00} m to " +
+                  $"{(hMax * TerrainHeight - GroundLevel):0.00} m relative to the field" +
+                  (hMin <= 0f ? "  <color=#FF8080>(CLAMPED at the bottom - raise GroundLevel)</color>" : ""));
         data.SetHeights(0, 0, heights);
 
         // Layers from the Poly Haven texture sets
@@ -347,10 +413,12 @@ public static class SceneBuilder
                 float slopeExposure = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((slopeDeg - 22f) / 20f));
                 d = Mathf.Max(d, slopeExposure * 0.75f);
                 g = Mathf.Max(g, slopeExposure * 0.35f);
-                // The horizon massifs are rock, not sand: bare stone on their faces, thinning to
-                // scrubby ground at the foot, otherwise they read as smooth dunes.
-                float alpine = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 300f) / 120f));
-                float stoneW = Mathf.Clamp01(alpine * (0.85f + 0.4f * slopeExposure));
+                // The horizon rock now lives on the backdrop mesh, not in the heightmap, so all this
+                // band still has to do is ease the outermost ground towards the backdrop's tone so the
+                // two meet without a colour seam. It used to paint bare stone from 420 m out to match
+                // mountains that were carved into the terrain itself.
+                float alpine = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 400f) / 100f));
+                float stoneW = Mathf.Clamp01(alpine * (0.45f + 0.4f * slopeExposure));
                 // Muddy shore around the pond (the water plane itself covers the flooded centre).
                 d = Mathf.Max(d, Mathf.Clamp01(VenueBuilder.Pond(wx, wz) * 1.5f) * 0.5f);
                 float veg = (1f - d) * (1f - g);
@@ -465,7 +533,9 @@ public static class SceneBuilder
         go.name = "Terrain";
         go.transform.position = new Vector3(-TerrainSize * 0.5f, -GroundLevel, -TerrainSize * 0.5f);
         var terrain = go.GetComponent<Terrain>();
-        terrain.heightmapPixelError = 3f;
+        // Tightened with the finer heightmap: at 3 the terrain LOD threw away most of the extra
+        // detail before it reached the screen.
+        terrain.heightmapPixelError = 2f;
         terrain.basemapDistance = 800f;
         terrain.detailObjectDistance = 140f;
         terrain.detailObjectDensity = 1f;
@@ -498,24 +568,110 @@ public static class SceneBuilder
                 }
     }
 
+    // ------------------------------------------------------------------ horizon backdrop
+
+    const float BackdropInner = 505f;   // just outside the terrain's 500 m axis edge
+    const float BackdropOuter = 1450f;  // inside every camera's 1500 m far clip
+    // The terrain is square, so while its edges are 500 m out its corners reach 707 m. The
+    // backdrop stays flat and slightly sunk until past that, or the rising relief would cut
+    // through the flat terrain corners along four visible straight lines.
+    const float BackdropClear = 710f;
+
     /// <summary>
-    /// Mountain ring closing the horizon beyond the tree line. Without it the 1 km field
-    /// simply stops flat against the sky, which reads as a cut-out model rather than a valley.
-    /// Returns normalised height (1 = TerrainHeight).
+    /// Height in metres above the field (y = 0) of the horizon relief, for the backdrop ring only -
+    /// the terrain itself now fades flat to its boundary and contributes nothing out here.
+    ///
+    /// Two overlapping ridge lines, because one reads as a wall and two read as distance: foothills
+    /// cresting 60 m up at ~950 m (3.5 deg, just above the 2.6 deg tree line, so the two overlap
+    /// instead of leaving a strip of empty haze between them) and a range reaching 200 m by 1250 m
+    /// (9.0 deg). Both hold their height out to the edge so the pilot can never see over the back.
+    ///
+    /// This replaced a ring that put a 165 m crest only 435 m away - 20.8 deg of elevation on a
+    /// 65 deg face, standing right on the out-of-bounds radius, which read as a crater rim. Real
+    /// ranges a kilometre off a field subtend 3-10 deg on 15-25 deg faces.
     /// </summary>
-    static float Mountains(float wx, float wz, float r)
+    static float HorizonProfile(float wx, float wz, float r)
     {
-        float band = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 285f) / 165f));
-        if (band <= 0f) return 0f;
+        float foot = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - BackdropClear) / 240f));
+        float band = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 850f) / 400f));
+        if (foot <= 0f) return 0f;
+
         float ang = Mathf.Atan2(wz, wx);
-        // ridge line: a few big massifs around the compass, each broken up by two noise octaves
+        // A few big massifs around the compass, each broken up by three noise octaves. The
+        // frequencies are high enough to put visible spurs and gullies on the faces - at this
+        // distance almost everything is fog, so the silhouette and the shading are all there is.
         float ridges = 0.55f + 0.45f * Mathf.Sin(ang * 3f + 0.7f) * Mathf.Cos(ang * 2f - 1.3f);
-        float coarse = Mathf.PerlinNoise(900f + wx * 0.0035f, 120f + wz * 0.0035f);
-        float fine = Mathf.PerlinNoise(2500f + wx * 0.012f, 400f + wz * 0.012f);
-        float peaks = Mathf.Clamp01(ridges * (0.45f + 0.75f * coarse) + 0.25f * fine - 0.15f);
-        // sharpened: a smooth power curve gives dunes, a steeper one gives ridges and valleys
-        float metres = band * band * band * Mathf.Pow(peaks, 1.35f) * 165f;
-        return metres / TerrainHeight;
+        float coarse = Mathf.PerlinNoise(900f + wx * 0.0022f, 120f + wz * 0.0022f);
+        float mid = Mathf.PerlinNoise(2500f + wx * 0.0075f, 400f + wz * 0.0075f);
+        float fine = Mathf.PerlinNoise(6100f + wx * 0.019f, 250f + wz * 0.019f);
+        float peaks = Mathf.Clamp01(ridges * (0.45f + 0.75f * coarse) + 0.22f * mid + 0.08f * fine - 0.15f);
+
+        // Foothills carry their own, gentler noise so the two ridge lines never share a silhouette.
+        float footNoise = 0.55f + 0.45f * Mathf.PerlinNoise(400f + wx * 0.005f, 800f + wz * 0.005f);
+
+        // Sharpened: a smooth power curve gives dunes, a steeper one gives ridges and valleys.
+        return foot * footNoise * 60f + band * Mathf.Pow(peaks, 1.35f) * 140f;
+    }
+
+    /// <summary>
+    /// The horizon itself: one ring mesh from just outside the terrain boundary out to 1450 m,
+    /// carrying the ground continuation and both ridge lines from <see cref="HorizonProfile"/>.
+    ///
+    /// It exists because a 1 km terrain cannot hold a believable horizon - anything tall enough to
+    /// close the sky has to sit within 500 m of the pilot, where it can only look like a crater
+    /// wall. Renderer only: no collider, and the whole thing lies outside the 470 m flyable radius.
+    /// </summary>
+    static void BuildBackdrop(Transform env)
+    {
+        const int angular = 288;   // 1.25 deg per step: ~27 m quads at the far crest
+        const int radial = 44;
+
+        var b = new MeshBuilder.Builder();
+
+        // Radii biased outwards so the triangles cluster where the relief actually is.
+        var radii = new float[radial + 1];
+        for (int i = 0; i <= radial; i++)
+        {
+            float t = i / (float)radial;
+            radii[i] = Mathf.Lerp(BackdropInner, BackdropOuter, Mathf.Pow(t, 0.8f));
+        }
+
+        for (int i = 0; i <= radial; i++)
+        {
+            float rr = radii[i];
+            // Hold the whole terrain-overlap band 0.3 m low. The terrain there is flat at y = 0
+            // after the rim fade, so it wins the depth test everywhere the two meet instead of
+            // z-fighting a coplanar surface; past the corners the sink eases back out. The step
+            // this leaves at the terrain edge is 0.3 m seen from 500 m away - about 0.03 deg.
+            float sink = rr < BackdropClear ? -0.3f : -0.3f * Mathf.Clamp01(1f - (rr - BackdropClear) / 60f);
+            for (int j = 0; j <= angular; j++)
+            {
+                float a = j / (float)angular * Mathf.PI * 2f;
+                float wx = Mathf.Cos(a) * rr, wz = Mathf.Sin(a) * rr;
+                float y = HorizonProfile(wx, wz, rr) + sink;
+                // Planar UVs: one texture repeat per 60 m.
+                b.Add(new Vector3(wx, y, wz), Vector3.up, new Vector2(wx / 60f, wz / 60f));
+            }
+        }
+
+        int stride = angular + 1;
+        for (int i = 0; i < radial; i++)
+            for (int j = 0; j < angular; j++)
+            {
+                int v0 = i * stride + j;
+                b.Quad(v0, v0 + stride, v0 + stride + 1, v0 + 1);
+            }
+
+        var mesh = GeneratedAssets.SaveMesh(b.ToMesh("Horizon", recalculateNormals: true), "Horizon");
+        // Warm, dry tint rather than a cold grey: the terrain it has to sit behind is tan, and fog
+        // is already pulling everything out here towards the blue-grey of the sky.
+        var mat = GeneratedAssets.PbrMaterial("HorizonRock", "aerial_grass_rock", 1f, 0.06f, new Color(0.74f, 0.68f, 0.56f));
+        var go = MeshObject("Horizon", env, mesh, mat, Vector3.zero);
+        go.isStatic = true;
+        var mr = go.GetComponent<Renderer>();
+        // Everything here is past QualitySettings.shadowDistance (420 m), so it could never cast
+        // into the flyable area anyway - keep it out of the shadow pass entirely.
+        mr.shadowCastingMode = ShadowCastingMode.Off;
     }
 
     /// <summary>Eases the six terrain layer weights toward a biome target by k.</summary>
@@ -598,6 +754,8 @@ public static class SceneBuilder
         var net = Primitive(PrimitiveType.Cube, "Safety net", env, new Vector3(0f, 1.5f, -12f), new Vector3(24f, 3f, 0.02f), netMat, collider: false);
         net.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
 
+        BuildBackdrop(env);
+        BuildWindsock(env, terrain, new Vector3(-10.5f, 0f, -9f), steel);
         BuildTrees(env, terrain);
         BuildPond(env, terrain);
         VenueBuilder.BuildLandscapes(env, terrain);
@@ -665,6 +823,36 @@ public static class SceneBuilder
         container.transform.rotation = Quaternion.Euler(0f, 20f, 0f);
     }
 
+    /// <summary>
+    /// A cheaper version of a tree spec for the distance LOD: one branch level and most of the
+    /// leaf cards gone, with the remaining cards enlarged so the crown keeps roughly the same
+    /// visual mass. Same seed, so the distant mesh is recognisably the tree it stands in for.
+    /// </summary>
+    static TreeGenerator.Params Simplified(TreeGenerator.Params p) => new TreeGenerator.Params
+    {
+        seed = p.seed,
+        height = p.height,
+        trunkRadius = p.trunkRadius,
+        levels = Mathf.Max(2, p.levels - 1),
+        leafSize = p.leafSize * 1.45f,
+        cardsPerTip = 2,
+        spreadDeg = p.spreadDeg,
+        droop = p.droop,
+        crownStart = p.crownStart,
+    };
+
+    /// <summary>One LOD level of a tree: a child renderer holding the mesh for that distance band.</summary>
+    static Renderer LodRenderer(Transform parent, string name, Mesh mesh, Material[] mats)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, false);
+        go.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var mr = go.AddComponent<MeshRenderer>();
+        mr.sharedMaterials = mats;
+        mr.shadowCastingMode = ShadowCastingMode.On;
+        return mr;
+    }
+
     static void BuildTrees(Transform env, Terrain terrain)
     {
         var bark = GeneratedAssets.PbrMaterial("Bark", "bark_willow_02", 1f, 0.8f);
@@ -686,15 +874,16 @@ public static class SceneBuilder
         var leafMats = new Material[leafTints.Length];
         for (int i = 0; i < leafTints.Length; i++)
         {
-            leafMats[i] = Mat($"Leaves_{i}", leafTints[i], cutout: true, glossiness: 0.18f);
-            leafMats[i].mainTexture = leafTex;
-            leafMats[i].enableInstancing = true;
+            leafMats[i] = FoliageMat($"Leaves_{i}", leafTints[i], leafTex, 0.18f);
         }
         var barkDark = GeneratedAssets.PbrMaterial("BarkDark", "bark_willow_02", 1f, 0.7f, new Color(0.72f, 0.68f, 0.62f));
         barkDark.enableInstancing = true;
 
-        // Variants: (mesh, height, crown radius)
-        var variants = new List<(Mesh mesh, float height, float crown)>();
+        // Two meshes per variant: the full tree, and a reduced one for distance. A tree line dense
+        // enough to actually be opaque needs ~700 instances, which is only affordable with LOD -
+        // and the project had no LODGroup anywhere, so every tree was drawn at full branch detail
+        // even at 400 m.
+        var variants = new List<(Mesh near, Mesh far, float height, float crown)>();
         var specs = new[]
         {
             new TreeGenerator.Params { seed = 11, height = 9f, trunkRadius = 0.28f, levels = 4, leafSize = 1.15f, cardsPerTip = 5 },
@@ -705,8 +894,11 @@ public static class SceneBuilder
         };
         for (int i = 0; i < specs.Length; i++)
         {
-            var mesh = TreeGenerator.Generate(specs[i], $"Tree_{i}", out float crown);
-            variants.Add((GeneratedAssets.SaveMesh(mesh, $"Tree_{i}"), specs[i].height, crown));
+            var near = TreeGenerator.Generate(specs[i], $"Tree_{i}", out float crown);
+            var far = TreeGenerator.Generate(Simplified(specs[i]), $"Tree_{i}_far", out _);
+            variants.Add((GeneratedAssets.SaveMesh(near, $"Tree_{i}"),
+                          GeneratedAssets.SaveMesh(far, $"Tree_{i}_far"),
+                          specs[i].height, crown));
         }
 
         var trees = new GameObject("Trees").transform;
@@ -716,22 +908,37 @@ public static class SceneBuilder
 
         void Place(int variant, float x, float z, float scale, bool bush = false)
         {
-            var (mesh, height, crown) = variants[variant];
+            var (near, far, height, crown) = variants[variant];
             float y = GroundHeight(terrain, x, z) - 0.1f;
             var go = new GameObject(bush ? "Bush" : "Tree");
-            go.isStatic = true;
             go.transform.SetParent(trees);
             go.transform.position = new Vector3(x, y, z);
             // a few degrees of lean, and trunks are never perfectly round in plan
             go.transform.rotation = Quaternion.Euler(Rand(-4f, 4f), Rand(0f, 360f), Rand(-4f, 4f));
             go.transform.localScale = new Vector3(scale * Rand(0.9f, 1.12f), scale * Rand(0.85f, 1.25f), scale * Rand(0.9f, 1.12f));
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            var mr = go.AddComponent<MeshRenderer>();
+
             // weighted so most trees are ordinary green and only a few have turned
             double pick = rng.NextDouble();
             int tint = pick < 0.34 ? 0 : pick < 0.58 ? 1 : pick < 0.78 ? 2 : pick < 0.9 ? 3 : pick < 0.97 ? 4 : 5;
-            mr.sharedMaterials = new[] { rng.NextDouble() < 0.35 ? barkDark : bark, leafMats[tint] };
-            mr.shadowCastingMode = ShadowCastingMode.On;
+            var mats = new[] { rng.NextDouble() < 0.35 ? barkDark : bark, leafMats[tint] };
+
+            // Deliberately NOT marked static any more. Occlusion culling is not baked in this
+            // project (m_OcclusionCullingData is null), so isStatic only ever bought static
+            // batching - and for ~1000 instances of ten shared meshes, GPU instancing, which
+            // static batching suppresses, is both faster and far cheaper in memory. The sway
+            // weights live in UV2, so they survive either path.
+            var near0 = LodRenderer(go.transform, "LOD0", near, mats);
+            var far1 = LodRenderer(go.transform, "LOD1", far, mats);
+            var lods = go.AddComponent<LODGroup>();
+            // Cull threshold left very low on purpose: a tree line that popped out of existence at
+            // range would be worse than the see-through one it replaces.
+            lods.SetLODs(new[]
+            {
+                new LOD(0.05f, new[] { near0 }),
+                new LOD(0.004f, new[] { far1 }),
+            });
+            lods.RecalculateBounds();
+
             // Unity scales a capsule/sphere radius by the LARGEST axis of the transform, and these
             // trees have a deliberately non-uniform scale - without dividing it back out the
             // colliders bulge past the foliage and the drone "hits a tree" while still in clear air.
@@ -761,11 +968,15 @@ public static class SceneBuilder
             Place(rng.Next(0, 4), x, z, Rand(0.85f, 1.2f));
             placed++;
         }
-        // Tree line ringing the far field
-        for (int i = 0; i < 160; i++)
+        // Tree line ringing the far field. This was 160 trees spread over 2.2 km of circumference
+        // in a 90 m-deep band - one every 14.7 m, so you could see straight between the trunks to
+        // the horizon. A real woodland edge is opaque. 700 in a narrower 55 m band puts about
+        // 2.2 crown-widths of foliage across every line of sight out of the field.
+        const int lineTrees = 700;
+        for (int i = 0; i < lineTrees; i++)
         {
-            float ang = i / 160f * Mathf.PI * 2f + Rand(-0.02f, 0.02f);
-            float r = Rand(330f, 420f);
+            float ang = i / (float)lineTrees * Mathf.PI * 2f + Rand(-0.006f, 0.006f);
+            float r = Rand(330f, 385f);
             Place(rng.Next(0, 3), Mathf.Cos(ang) * r, Mathf.Sin(ang) * r, Rand(1.1f, 1.5f));
         }
         // Deadfall: logs and broken branches under the tree clumps. Woodland floors are never bare.
@@ -789,15 +1000,15 @@ public static class SceneBuilder
         }
 
         // Desert scrub: the bush variant in a bleached palette, sparse, on the sand only
-        var scrub = Mat("DesertScrub", new Color(0.72f, 0.66f, 0.42f), cutout: true, glossiness: 0.12f);
-        scrub.mainTexture = leafTex;
-        scrub.enableInstancing = true;
+        // Stiff, low desert scrub moves far less than a tree crown in the same wind.
+        var scrub = FoliageMat("DesertScrub", new Color(0.72f, 0.66f, 0.42f), leafTex, 0.12f, swayScale: 0.45f);
         for (int i = 0; i < 130; i++)
         {
             float ang = Rand(0f, Mathf.PI * 2f), r = Rand(30f, 100f);
             float x = VenueBuilder.Race.x + Mathf.Cos(ang) * r, z = VenueBuilder.Race.y + Mathf.Sin(ang) * r;
             if (VenueBuilder.Keepout(x, z, 3f) || VenueBuilder.Desert(x, z) < 0.5f) continue;
-            var (mesh, height, crown) = variants[4];
+            // Knee-high scrub seen from tens of metres away - the reduced mesh is all it ever needs.
+            var mesh = variants[4].far;
             float y = GroundHeight(terrain, x, z) - 0.1f;
             var go = new GameObject("Scrub");
             go.transform.SetParent(trees);
@@ -821,22 +1032,132 @@ public static class SceneBuilder
         }
     }
 
+    /// <summary>
+    /// Aviation windsock on a pole by the pit. The scene had no wind indicator at all, and no way
+    /// to see wind *direction* anywhere (the OSD showed only a magnitude) - so a crosswind that the
+    /// physics was applying the whole time was invisible until it pushed the drone off line.
+    ///
+    /// Built as a nested chain of five open frustums so <see cref="WindVane"/> can ripple it from
+    /// mouth to tail. Deliberately not marked static: it moves every frame.
+    /// </summary>
+    static void BuildWindsock(Transform env, Terrain terrain, Vector3 at, Material steel)
+    {
+        float ground = GroundHeight(terrain, at.x, at.z);
+        const float poleHeight = 4.2f;
+        const int segCount = 5;
+        const float segLength = 0.48f;
+
+        var root = new GameObject("Windsock").transform;
+        root.SetParent(env);
+        root.position = new Vector3(at.x, ground, at.z);
+
+        Primitive(PrimitiveType.Cylinder, "Sock pole", root, new Vector3(0f, poleHeight * 0.5f, 0f),
+                  new Vector3(0.08f, poleHeight * 0.5f, 0.08f), steel);
+        Primitive(PrimitiveType.Cylinder, "Sock base", root, new Vector3(0f, 0.06f, 0f),
+                  new Vector3(0.5f, 0.06f, 0.5f), steel);
+
+        var orange = Mat("SockOrange", new Color(0.95f, 0.33f, 0.04f), glossiness: 0.12f);
+        var white = Mat("SockWhite", new Color(0.93f, 0.93f, 0.9f), glossiness: 0.12f);
+
+        // The chain hangs off a pivot at the top of the pole.
+        var pivot = new GameObject("Sock pivot").transform;
+        pivot.SetParent(root, false);
+        pivot.localPosition = new Vector3(0f, poleHeight, 0f);
+
+        // Swivel hoop at the mouth, so the sock visibly hangs from something.
+        Primitive(PrimitiveType.Cylinder, "Sock hoop", pivot, Vector3.zero, new Vector3(0.9f, 0.02f, 0.9f), steel, collider: false);
+
+        var segments = new Transform[segCount];
+        Transform parent = pivot;
+        for (int i = 0; i < segCount; i++)
+        {
+            var seg = new GameObject($"Sock seg {i}").transform;
+            seg.SetParent(parent, false);
+            seg.localPosition = i == 0 ? Vector3.zero : new Vector3(0f, 0f, segLength);
+            segments[i] = seg;
+            parent = seg;
+
+            // Open frustum, tapering along the sock. Lathed about +Y, then turned to lie along +Z
+            // (Quaternion.Euler(90,0,0) maps +Y onto +Z) so the chain runs downwind.
+            float r0 = Mathf.Lerp(0.42f, 0.20f, i / (float)segCount);
+            float r1 = Mathf.Lerp(0.42f, 0.20f, (i + 1) / (float)segCount);
+            var mesh = GeneratedAssets.SaveMesh(MeshBuilder.Lathe(new[]
+            {
+                new Vector2(r0, 0f), new Vector2(r1, segLength),
+            }, 14, $"SockSeg{i}", smooth: true, capBottom: false, capTop: false), $"SockSeg{i}");
+
+            var vis = MeshObject($"Sock skin {i}", seg, mesh, i % 2 == 0 ? orange : white, Vector3.zero);
+            vis.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            var r = vis.GetComponent<Renderer>();
+            r.shadowCastingMode = ShadowCastingMode.TwoSided;
+        }
+
+        // segments[0] sits at the pivot with no offset, so WindVane yawing it swings the whole
+        // chain round the pole; the pivot itself just holds the hoop.
+        var vane = root.gameObject.AddComponent<WindVane>();
+        vane.kind = WindVane.Kind.Sock;
+        vane.segments = segments;
+    }
+
     /// <summary>A small farm pond nestled in the hills - a reflective plane sitting in the basin
-    /// carved into the heightmap by BuildTerrain (VenueBuilder.Pond).</summary>
+    /// carved into the heightmap by BuildTerrain (VenueBuilder.Pond), plus the trigger volume that
+    /// makes touching it fatal (see <see cref="WaterHazard"/>).</summary>
     static void BuildPond(Transform env, Terrain terrain)
     {
         var water = Mat("Water", new Color(0.08f, 0.2f, 0.26f), glossiness: 0.92f, metallic: 0.05f);
-        float rim = GroundHeight(terrain, VenueBuilder.PondCenter.x + VenueBuilder.PondRadius + 4f, VenueBuilder.PondCenter.y);
+
+        // Water level from the basin's real geometry rather than one probe on its edge. A single
+        // sample put the surface *below* the basin floor the moment the pond sat on any slope -
+        // the disc ended up buried in the hillside and a drone flown into the pond passed over
+        // the water entirely and landed on dry mud. Lowest point of the shore ring, dropped a
+        // little so the water sits inside its banks.
+        float shoreMin = float.MaxValue;
+        float floorMax = float.MinValue;
+        const int probes = 24;
+        for (int i = 0; i < probes; i++)
+        {
+            float a = i / (float)probes * Mathf.PI * 2f;
+            shoreMin = Mathf.Min(shoreMin, GroundHeight(terrain,
+                VenueBuilder.PondCenter.x + Mathf.Cos(a) * (VenueBuilder.PondRadius + 3f),
+                VenueBuilder.PondCenter.y + Mathf.Sin(a) * (VenueBuilder.PondRadius + 3f)));
+            floorMax = Mathf.Max(floorMax, GroundHeight(terrain,
+                VenueBuilder.PondCenter.x + Mathf.Cos(a) * (VenueBuilder.PondRadius * 0.55f),
+                VenueBuilder.PondCenter.y + Mathf.Sin(a) * (VenueBuilder.PondRadius * 0.55f)));
+        }
+        float surfaceY = shoreMin - 0.35f;
+        float centreFloor = GroundHeight(terrain, VenueBuilder.PondCenter.x, VenueBuilder.PondCenter.y);
+        Debug.Log($"<b>Drone Trainer</b>: pond shore={shoreMin:0.00} floor(centre)={centreFloor:0.00} " +
+                  $"floor(max)={floorMax:0.00} surface={surfaceY:0.00} depth={surfaceY - centreFloor:0.00} m");
+
         var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         go.name = "Pond";
         Object.DestroyImmediate(go.GetComponent<Collider>());
         go.transform.SetParent(env, false);
-        go.transform.position = new Vector3(VenueBuilder.PondCenter.x, rim - 0.6f, VenueBuilder.PondCenter.y);
+        go.transform.position = new Vector3(VenueBuilder.PondCenter.x, surfaceY, VenueBuilder.PondCenter.y);
         go.transform.localScale = new Vector3(VenueBuilder.PondRadius * 1.6f, 0.02f, VenueBuilder.PondRadius * 1.6f);
         var mr = go.GetComponent<Renderer>();
         mr.sharedMaterial = water;
         mr.shadowCastingMode = ShadowCastingMode.Off;
         go.isStatic = true;
+
+        // The kill volume: the water body itself, from the surface down past the basin floor. A
+        // trigger on the 4 cm visual disc would be tunnelled straight through at flying speed.
+        float depth = Mathf.Max(1f, surfaceY - centreFloor + 0.6f);
+        var vol = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        vol.name = "Pond water volume";
+        vol.transform.SetParent(env, false);
+        vol.transform.position = new Vector3(VenueBuilder.PondCenter.x, surfaceY - depth * 0.5f, VenueBuilder.PondCenter.y);
+        // Unity's cylinder primitive is 1 unit across and 2 units tall.
+        vol.transform.localScale = new Vector3(VenueBuilder.PondRadius * 1.9f, depth * 0.5f, VenueBuilder.PondRadius * 1.9f);
+        // The cylinder primitive ships a CapsuleCollider, which degenerates to a sphere at these
+        // wide-and-shallow proportions - replace it with a convex hull of the cylinder itself,
+        // which MeshCollider takes from the MeshFilter left in place.
+        Object.DestroyImmediate(vol.GetComponent<Collider>());
+        Object.DestroyImmediate(vol.GetComponent<MeshRenderer>());
+        var col = vol.AddComponent<MeshCollider>();
+        col.convex = true;
+        col.isTrigger = true;
+        vol.AddComponent<WaterHazard>().surfaceY = surfaceY;
     }
 
     // ------------------------------------------------------------------ drone
@@ -871,6 +1192,7 @@ public static class SceneBuilder
         autopilot.fc = fc;
         autopilot.input = go.GetComponent<PilotInput>();
         go.AddComponent<PayloadRack>();
+        go.AddComponent<RcLink>();
         var tricks = go.AddComponent<TrickDetector>();
         tricks.drone = physics;
         tricks.fc = fc;
@@ -951,6 +1273,10 @@ public static class SceneBuilder
 
         var fpvCam = drone.GetComponentInChildren<Camera>();
         fpvCam.GetComponent<FpvCameraEffects>().pilot = los.transform;
+        // Same pilot position drives the control link, but with its own, much longer range: RC
+        // carries far further than 5.8 GHz analog video.
+        var rcLink = drone.GetComponent<RcLink>();
+        if (rcLink != null) rcLink.pilot = los.transform;
 
         // Cinematic camera behind the menus (index 3; not part of the in-flight camera cycle)
         var show = new GameObject("Showcase Camera");
@@ -1409,7 +1735,7 @@ public static class SceneBuilder
 
     // ------------------------------------------------------------------ trainer / lessons
 
-    static void BuildTrainer(GameObject drone, Camera[] cams, Course course)
+    static void BuildTrainer(GameObject drone, Camera[] cams, Course course, Terrain terrain)
     {
         var physics = drone.GetComponent<DronePhysics>();
         var fc = drone.GetComponent<FlightController>();
@@ -1418,7 +1744,12 @@ public static class SceneBuilder
 
         var trainer = new GameObject("Trainer");
         trainer.AddComponent<SimBootstrap>();
-        trainer.AddComponent<Wind>();
+        var wind = trainer.AddComponent<Wind>();
+        // Pushes the live wind into the foliage shader and the terrain grass. Without this the
+        // wind existed only in the drone physics and the OSD number.
+        var windVisuals = trainer.AddComponent<WindVisuals>();
+        windVisuals.wind = wind;
+        windVisuals.terrain = terrain;
 
         var switcher = trainer.AddComponent<CameraSwitcher>();
         switcher.cameras = new[] { cams[0], cams[1], cams[2] };
@@ -1738,7 +2069,7 @@ public static class SceneBuilder
         atmo.presets = new[]
         {
             new VenueAtmosphere.Preset { venue = "Pit field", sunEuler = new Vector3(52f, -58f, 0f), sunColor = new Color(1f, 0.96f, 0.9f),
-                sunIntensity = 1.6f, ambient = 1f, fogColor = new Color(0.72f, 0.78f, 0.86f), fogDensity = 0.0012f, skyExposure = 1f, skyRotation = 0f, skyTint = Color.white },
+                sunIntensity = 1.6f, ambient = 1f, fogColor = new Color(0.72f, 0.78f, 0.86f), fogDensity = 0.0009f, skyExposure = 1f, skyRotation = 0f, skyTint = Color.white },
             new VenueAtmosphere.Preset { venue = "Race track", sunEuler = new Vector3(22f, -120f, 0f), sunColor = new Color(1f, 0.87f, 0.68f),
                 sunIntensity = 1.45f, ambient = 0.95f, fogColor = new Color(0.84f, 0.77f, 0.63f), fogDensity = 0.0022f, skyExposure = 1f, skyRotation = 120f, skyTint = new Color(1f, 0.93f, 0.8f) },
             new VenueAtmosphere.Preset { venue = "Freestyle park", sunEuler = new Vector3(64f, 40f, 0f), sunColor = new Color(0.86f, 0.89f, 0.95f),

@@ -52,7 +52,11 @@ public static class VenueBuilder
         float race = 1f - Mathf.Clamp01((Mathf.Sqrt(ex * ex + ez * ez) - 1f) * 4f);
         float park = SoftRect(x, z, Park, ParkW + 6f, ParkD + 6f, 10f);
         float yard = SoftRect(x, z, Yard, YardW + 6f, YardD + 6f, 10f);
-        return Mathf.Max(race, Mathf.Max(park, yard));
+        // The pond belongs here too: its basin is carved to a fixed depth, so it has to sit on
+        // level ground. On a slope the "basin" comes out tilted, one side of the floor ends up
+        // above any sensible water level, and the water disc gets buried in the hillside.
+        float pond = Falloff(x, z, PondCenter, PondRadius + 14f, 12f);
+        return Mathf.Max(Mathf.Max(race, pond), Mathf.Max(park, yard));
     }
 
     /// <summary>1 on bare dirt: the demolition yard.</summary>
@@ -261,8 +265,30 @@ public static class VenueBuilder
             float x = Race.x + Mathf.Sin(a) * (RaceRx + 8f), z = Race.y + Mathf.Cos(a) * (RaceRz + 8f);
             float gy = SceneBuilder.GroundHeight(terrain, x, z);
             SceneBuilder.Primitive(PrimitiveType.Cylinder, "Flag pole", v, new Vector3(x, gy + 3f, z), new Vector3(0.06f, 3f, 0.06f), steel);
-            var f = SceneBuilder.Primitive(PrimitiveType.Cube, "Flag", v, new Vector3(x + 0.6f, gy + 5.4f, z), new Vector3(1.2f, 0.7f, 0.02f), flagMats[i % 3], collider: false);
-            f.transform.rotation = Quaternion.Euler(0f, (float)rng.NextDouble() * 40f - 20f, 0f);
+            // Two-segment flag streaming downwind, driven by WindVane. It used to be a single cube
+            // frozen at a random yaw, which read as a painted signboard and - worse - showed a
+            // wind direction that had nothing to do with the one the drone was flying in.
+            var flagRoot = new GameObject("Flag").transform;
+            flagRoot.SetParent(v);
+            flagRoot.position = new Vector3(x, gy + 5.4f, z);
+            var flagSegs = new Transform[2];
+            Transform fp = flagRoot;
+            for (int s = 0; s < 2; s++)
+            {
+                var seg = new GameObject($"Flag seg {s}").transform;
+                seg.SetParent(fp, false);
+                seg.localPosition = s == 0 ? Vector3.zero : new Vector3(0f, 0f, 0.6f);
+                flagSegs[s] = seg;
+                fp = seg;
+                // Thin in X, 0.7 m tall, 0.6 m of length per segment running downwind (+Z).
+                SceneBuilder.Primitive(PrimitiveType.Cube, "Cloth", seg, new Vector3(0f, 0f, 0.3f),
+                                       new Vector3(0.02f, 0.7f, 0.6f), flagMats[i % 3], collider: false);
+            }
+            var fvane = flagRoot.gameObject.AddComponent<WindVane>();
+            fvane.kind = WindVane.Kind.Flag;
+            fvane.segments = flagSegs;
+            fvane.rippleDeg = 13f;
+            fvane.rippleHz = 2.1f + (float)rng.NextDouble() * 0.6f;
         }
 
         // Grandstand along the south straight, facing the track

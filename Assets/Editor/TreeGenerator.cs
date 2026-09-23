@@ -37,8 +37,47 @@ public static class TreeGenerator
         Grow(c, Vector3.zero, Vector3.up, p.height * 0.55f, p.trunkRadius, 0, true);
         crownRadius = c.crownRadius;
         var mesh = MeshBuilder.CombineSubmeshes(new[] { c.bark, c.leaves }, name);
+        BakeSwayWeights(mesh, c);
         return mesh;
     }
+
+    /// <summary>
+    /// Writes the per-vertex wind-sway weights that DroneTrainer/FoliageSway reads from UV2:
+    /// x = amplitude weight, y = phase. Baked here rather than derived in the shader because the
+    /// trees are statically batched, which pre-transforms the vertices into world space and so
+    /// destroys the object-space height/radius the amplitude has to be built from.
+    ///
+    /// Bark (sub-mesh 0) gets zero: trunks and branches stay rigid and only the crown moves,
+    /// which is both what a real tree does at these wind speeds and what hides the fact that
+    /// each leaf cluster is a handful of flat cards.
+    /// </summary>
+    static void BakeSwayWeights(Mesh mesh, Ctx c)
+    {
+        int barkVerts = 0;
+        foreach (var (m, _) in c.bark) barkVerts += m.vertexCount;
+        int cardVerts = Mathf.Max(1, c.leafCard.vertexCount);
+
+        var verts = mesh.vertices;
+        var uv2 = new Vector2[verts.Length];
+        float crown = Mathf.Max(0.001f, c.crownRadius);
+        float top = Mathf.Max(0.001f, c.p.height);
+
+        for (int i = barkVerts; i < verts.Length; i++)
+        {
+            var v = verts[i];
+            float heightFrac = Mathf.Clamp01(v.y / top);
+            float radial = Mathf.Clamp01(new Vector2(v.x, v.z).magnitude / crown);
+            // Cantilever-ish: little movement low down or close in to the trunk, most at the tips.
+            uv2[i] = new Vector2(
+                Mathf.Pow(heightFrac, 1.5f) * (0.30f + 0.70f * radial),
+                // One phase per leaf card - a per-vertex phase would tear each card apart. The
+                // golden-ratio step spreads successive clusters evenly without an RNG draw.
+                Frac((i - barkVerts) / cardVerts * 0.6180339887f + c.p.seed * 0.7548776662f));
+        }
+        mesh.SetUVs(1, uv2);
+    }
+
+    static float Frac(float x) => x - Mathf.Floor(x);
 
     static float R(Ctx c, float a, float b) => a + (float)c.rng.NextDouble() * (b - a);
 

@@ -77,6 +77,10 @@ public class FlightController : MonoBehaviour
     [Tooltip("Extra control-loop latency in physics steps (ESC/DShot + filtering)")]
     [Range(0, 3)] public int loopDelaySteps = 1;
 
+    [Header("RC smoothing")]
+    [Tooltip("Betaflight rc_smoothing: cut-off of the setpoint smoothing filter. The sticks are sampled once per rendered frame but this loop runs at 250 Hz, so the raw stick value arrives as a staircase - see the note in FixedUpdate")]
+    [Range(0f, 120f)] public float rcSmoothingHz = 30f;
+
     [Header("Throttle")]
     [Tooltip("Idle motor speed while armed (Betaflight dshot_idle 5.5%)")]
     [Range(0f, 0.2f)] public float motorIdle = 0.055f;
@@ -94,6 +98,10 @@ public class FlightController : MonoBehaviour
     DronePhysics drone;
     PilotInput input;
     Vector3 gyroFiltered;
+    // Two cascaded one-pole stages (PT2), the closest cheap equivalent of Betaflight's PT3
+    // setpoint smoothing. Order: roll, pitch, yaw, throttle.
+    Vector4 rcStage1, rcStage2;
+    bool rcPrimed;
     readonly Vector3[] gyroDelay = new Vector3[4];
     int delayHead;
     float noiseSeed;
@@ -143,6 +151,26 @@ public class FlightController : MonoBehaviour
         float dt = Time.fixedDeltaTime;
         var rb = drone.Body;
 
+        // --- Setpoint smoothing (Betaflight rc_smoothing) ---------------------
+        // PilotInput samples the sticks once per rendered frame; this loop runs at 250 Hz. The raw
+        // stick value is therefore a staircase that steps once every 2-4 physics steps, and the
+        // feedforward term differentiates it by dt: a 0.05 yaw-stick move used to produce
+        // ff * 33.5/0.004 = 1.51, i.e. saturated full motor authority for one step and then nothing
+        // for the next three. Real flight controllers filter the setpoint for exactly this reason.
+        if (input != null)
+        {
+            var raw = new Vector4(input.Roll, input.Pitch, input.Yaw, input.Throttle);
+            if (!rcPrimed) { rcStage1 = rcStage2 = raw; rcPrimed = true; }
+            else if (rcSmoothingHz <= 0f) { rcStage1 = rcStage2 = raw; }
+            else
+            {
+                float k = dt / (dt + 1f / (2f * Mathf.PI * rcSmoothingHz));
+                rcStage1 += (raw - rcStage1) * k;
+                rcStage2 += (rcStage1 - rcStage2) * k;
+            }
+        }
+        float stickRoll = rcStage2.x, stickPitch = rcStage2.y, stickYaw = rcStage2.z, stickThrottle = rcStage2.w;
+
         // Attitude from the world-up vector expressed in body frame.
         Vector3 upB = transform.InverseTransformDirection(Vector3.up);
         PitchDeg = Mathf.Atan2(-upB.z, upB.y) * Mathf.Rad2Deg; // + = nose down
@@ -171,24 +199,24 @@ public class FlightController : MonoBehaviour
         }
 
         // --- Target rates -------------------------------------------------
-        float acroPitch = pitchRates.Apply(input.Pitch);
-        float acroRoll = -rollRates.Apply(input.Roll); // roll right = -Z
-        float targetYawRate = yawRates.Apply(input.Yaw);
+        float acroPitch = pitchRates.Apply(stickPitch);
+        float acroRoll = -rollRates.Apply(stickRoll); // roll right = -Z
+        float targetYawRate = yawRates.Apply(stickYaw);
         float targetPitchRate, targetRollRate;
 
         switch (mode)
         {
             case FlightMode.Angle:
-                targetPitchRate = LevelRate(input.Pitch * angleLimitDeg, PitchDeg, pitchRates.maxRate);
-                targetRollRate = LevelRate(-input.Roll * angleLimitDeg, RollDeg, rollRates.maxRate);
+                targetPitchRate = LevelRate(stickPitch * angleLimitDeg, PitchDeg, pitchRates.maxRate);
+                targetRollRate = LevelRate(-stickRoll * angleLimitDeg, RollDeg, rollRates.maxRate);
                 break;
 
             case FlightMode.Horizon:
             {
-                float stick = Mathf.Max(Mathf.Abs(input.Pitch), Mathf.Abs(input.Roll));
+                float stick = Mathf.Max(Mathf.Abs(stickPitch), Mathf.Abs(stickRoll));
                 float level = Mathf.Clamp01(1f - stick / horizonTransition);
-                targetPitchRate = LevelRate(input.Pitch * angleLimitDeg, PitchDeg, pitchRates.maxRate) * level + acroPitch * (1f - level);
-                targetRollRate = LevelRate(-input.Roll * angleLimitDeg, RollDeg, rollRates.maxRate) * level + acroRoll * (1f - level);
+                targetPitchRate = LevelRate(stickPitch * angleLimitDeg, PitchDeg, pitchRates.maxRate) * level + acroPitch * (1f - level);
+                targetRollRate = LevelRate(-stickRoll * angleLimitDeg, RollDeg, rollRates.maxRate) * level + acroRoll * (1f - level);
                 break;
             }
 
@@ -200,7 +228,7 @@ public class FlightController : MonoBehaviour
         TargetRates = new Vector3(targetPitchRate, targetYawRate, targetRollRate);
 
         // --- Throttle -----------------------------------------------------
-        float t = input.Throttle;
+        float t = stickThrottle;
         float throttle;
         if (beginnerThrottleAssist && mode != FlightMode.Acro)
         {
