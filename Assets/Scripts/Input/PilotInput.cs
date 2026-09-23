@@ -23,6 +23,9 @@ public class PilotInput : MonoBehaviour
     public bool springThrottle = true;
     public float keyboardThrottleRate = 0.8f;
 
+    [Header("Real transmitter over UART (serial) - takes priority when it has signal")]
+    public SerialRc serialRc;
+
     [Header("USB RC transmitter (Joystick device) mapping - use the calibration wizard (Tab)")]
     public bool preferJoystick = true;
     public int[] joyAxis = { 0, 1, 2, 3 };       // per Channel
@@ -47,6 +50,11 @@ public class PilotInput : MonoBehaviour
     public bool DebugTogglePressed { get; private set; }
     /// <summary>Toggle the picture-in-picture FPV monitor (V).</summary>
     public bool MonitorPressed { get; private set; }
+    /// <summary>The UART radio.s arm switch went low - disarm now (failsafe included).</summary>
+    public bool RcDisarmRequested { get; private set; }
+    /// <summary>Flight mode selected by the radio.s 3-position switch.</summary>
+    public FlightMode RcMode { get; private set; } = FlightMode.Angle;
+    public bool RcModeChanged { get; private set; }
     public bool SettingsPressed { get; private set; }
     /// <summary>Release payload (F / right shoulder).</summary>
     public bool DropPressed { get; private set; }
@@ -80,12 +88,28 @@ public class PilotInput : MonoBehaviour
         ArmPressed = ModePressed = ResetPressed = CameraPressed = false;
         NextLessonPressed = RestartLessonPressed = PausePressed = DebugTogglePressed = SettingsPressed = DropPressed = MonitorPressed = false;
         ScenarioKey = -1;
+        RcDisarmRequested = RcModeChanged = false;
 
         var joystick = Joystick.current;
         var gamepad = Gamepad.current;
         var keyboard = Keyboard.current;
 
-        if (joystick != null && (preferJoystick || gamepad == null))
+        // A real transmitter on the UART outranks everything else - that is the point of
+        // plugging one in. It stays in charge until the link failsafes.
+        if (serialRc != null && serialRc.HasSignal)
+        {
+            Source = "UART " + serialRc.Status;
+            roll = serialRc.Roll;
+            pitch = serialRc.Pitch;
+            yaw = serialRc.Yaw;
+            throttle = serialRc.Throttle;
+            // Arming is a switch on a real radio, not a button: rising edge arms, falling edge disarms.
+            ArmPressed |= serialRc.ArmSwitchPressed;
+            RcDisarmRequested = serialRc.ArmSwitchReleased;
+            RcMode = serialRc.ModeSwitch;
+            RcModeChanged = serialRc.ModeSwitchChanged;
+        }
+        else if (joystick != null && (preferJoystick || gamepad == null))
         {
             Source = joystick.displayName;
             ReadJoystick(joystick, out roll, out pitch, out throttle, out yaw);

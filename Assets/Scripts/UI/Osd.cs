@@ -16,6 +16,7 @@ public class Osd : MonoBehaviour
     public CameraSwitcher cameras;
     public MainMenu menu;
     public FpvMonitor fpvMonitor;
+    public SerialRc serialRc;
     public bool showAxisDebug;
     public bool showSticks = true;
 
@@ -232,6 +233,12 @@ public class Osd : MonoBehaviour
             GUI.Label(new Rect(0, h * 0.4f, w, big.fontSize * 1.5f), Loc.S(crashDetector.Message), big);
             GUI.color = Color.white;
         }
+        else if (serialRc != null && serialRc.EverHadSignal && !serialRc.HasSignal && Mathf.Repeat(Time.time, 0.7f) < 0.42f)
+        {
+            GUI.color = new Color(1f, 0.35f, 0.35f);
+            GUI.Label(new Rect(0, h * 0.12f, w, big.fontSize * 1.2f), Loc.S("RC SIGNAL LOST - check the transmitter"), big);
+            GUI.color = Color.white;
+        }
         else if (flightController != null && !flightController.Armed && (crashDetector == null || !crashDetector.Crashed) && !settingsOpen)
         {
             GUI.color = new Color(1f, 1f, 1f, 0.8f);
@@ -374,6 +381,8 @@ public class Osd : MonoBehaviour
         input.springThrottle = GUILayout.Toggle(input.springThrottle, " " + Loc.T("Gamepad: throttle stick centre = 50%"));
 
         GUILayout.Space(8);
+        DrawSerialRcSettings(line);
+
         GUILayout.Label("<b>" + Loc.T("Rates (Betaflight Actual Rates)") + "</b>", header);
         flightController.rollRates.centerSensitivity = flightController.pitchRates.centerSensitivity =
             Slider("Roll/Pitch centre sensitivity (deg/s)", flightController.rollRates.centerSensitivity, 20f, 200f, "0");
@@ -432,6 +441,77 @@ public class Osd : MonoBehaviour
 
         GUILayout.EndScrollView();
         GUILayout.EndArea();
+    }
+
+    string[] portCache;
+    float portCacheAt;
+
+    /// <summary>Real transmitter over a UART: port, wire format, live channels, link health.</summary>
+    void DrawSerialRcSettings(float line)
+    {
+        if (serialRc == null) return;
+        GUILayout.Space(8);
+        GUILayout.Label("<b>" + Loc.T("Transmitter over UART (serial)") + "</b>", header);
+
+        bool live = serialRc.HasSignal;
+        string state = live ? Loc.F("connected - {0} Hz", serialRc.FramesPerSecond.ToString("0"))
+                   : serialRc.IsOpen ? Loc.T("port open, no frames")
+                   : Loc.T("not connected");
+        GUI.color = live ? new Color(0.6f, 1f, 0.6f) : serialRc.IsOpen ? new Color(1f, 0.85f, 0.4f) : new Color(1, 1, 1, 0.7f);
+        GUILayout.Label($"{serialRc.portName}  -  {state}", text);
+        GUI.color = Color.white;
+        if (!string.IsNullOrEmpty(serialRc.LastError)) GUILayout.Label("<color=#FF8080>" + serialRc.LastError + "</color>", small);
+
+        if (Time.unscaledTime - portCacheAt > 2f) { portCache = SerialRc.AvailablePorts(); portCacheAt = Time.unscaledTime; }
+        GUILayout.BeginHorizontal();
+        GUILayout.Label(Loc.T("Port"), small, GUILayout.Width(text.fontSize * 4f));
+        if (GUILayout.Button(serialRc.portName, GUILayout.Width(text.fontSize * 6f)) && portCache != null && portCache.Length > 0)
+        {
+            int idx = System.Array.IndexOf(portCache, serialRc.portName);
+            serialRc.portName = portCache[(idx + 1) % portCache.Length];
+            serialRc.SaveSettings();
+        }
+        GUILayout.Label(Loc.T("Baud"), small, GUILayout.Width(text.fontSize * 4f));
+        if (GUILayout.Button(serialRc.baudRate.ToString(), GUILayout.Width(text.fontSize * 5f)))
+        {
+            int[] rates = { 115200, 230400, 400000, 420000, 921600 };
+            int idx = System.Array.IndexOf(rates, serialRc.baudRate);
+            serialRc.baudRate = rates[(idx + 1) % rates.Length];
+            serialRc.SaveSettings();
+        }
+        if (GUILayout.Button(serialRc.protocol.ToString(), GUILayout.Width(text.fontSize * 4f)))
+        {
+            serialRc.protocol = (SerialRc.Protocol)(((int)serialRc.protocol + 1) % 3);
+            serialRc.SaveSettings();
+        }
+        if (GUILayout.Button(Loc.T(serialRc.IsOpen ? "Disconnect" : "Connect"), GUILayout.Width(text.fontSize * 6f)))
+        {
+            if (serialRc.IsOpen) serialRc.Close(); else serialRc.Open();
+            serialRc.SaveSettings();
+        }
+        GUILayout.EndHorizontal();
+
+        if (serialRc.autoConnect != GUILayout.Toggle(serialRc.autoConnect, " " + Loc.T("Connect automatically on start")))
+        {
+            serialRc.autoConnect = !serialRc.autoConnect;
+            serialRc.SaveSettings();
+        }
+
+        // Live channels - the fastest way to find which stick is on which channel. Shown whenever
+        // frames are arriving, so a replayed capture is as visible as a real radio.
+        if (serialRc.IsOpen || serialRc.HasSignal)
+        {
+            var us = serialRc.Channels_us;
+            for (int i = 0; i < 6; i++)
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"CH{i + 1}", small, GUILayout.Width(text.fontSize * 3f));
+                GUILayout.HorizontalSlider(us[i], 1000f, 2000f, GUILayout.MinWidth(120));
+                GUILayout.Label($"{us[i]} us", small, GUILayout.Width(text.fontSize * 4f));
+                GUILayout.EndHorizontal();
+            }
+            GUILayout.Label(Loc.T("Roll / Pitch / Throttle / Yaw / Arm / Mode are channels 1-6 by default"), small);
+        }
     }
 
     float Slider(string label, float value, float min, float max, string fmt)

@@ -128,6 +128,10 @@ public class FlightController : MonoBehaviour
 
         if (input.ModePressed)
             mode = (FlightMode)(((int)mode + 1) % 3);
+
+        // A radio drives these as switches, not as key presses.
+        if (input.RcDisarmRequested && Armed) Disarm();
+        if (input.RcModeChanged) mode = input.RcMode;
     }
 
     public void Arm()

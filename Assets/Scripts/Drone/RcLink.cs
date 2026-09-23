@@ -51,6 +51,7 @@ public class RcLink : MonoBehaviour
     DronePhysics drone;
     FlightController fc;
     CrashDetector crash;
+    SerialRc serial;
     float occlusion;
     float lowSince = -1f;
 
@@ -59,31 +60,20 @@ public class RcLink : MonoBehaviour
         drone = GetComponent<DronePhysics>();
         fc = GetComponent<FlightController>();
         crash = GetComponent<CrashDetector>();
+        serial = GetComponent<SerialRc>();
     }
 
     void Update()
     {
-        if (!enableFailsafe || pilot == null) { Quality = 1f; FailsafeTripped = false; return; }
+        if (!enableFailsafe) { Quality = 1f; FailsafeTripped = false; return; }
 
-        float d = Vector3.Distance(pilot.position, transform.position);
-        float rangeQ = 1f - Mathf.Clamp01((d - rangeFullSignal) / Mathf.Max(1f, rangeNoSignal - rangeFullSignal));
+        // A transmitter wired in over UART that goes quiet is a lost link too: the flight
+        // controller stops hearing the radio for the same reason it does at the edge of RF range,
+        // so it runs the same procedure. It only counts once that link has actually carried
+        // frames, or flying from the keyboard with nothing plugged in would failsafe instantly.
+        bool serialLost = serial != null && serial.EverHadSignal && !serial.HasSignal;
 
-        // Trees do not block 2.4 GHz meaningfully; walls and terrain do. Skip straight past
-        // foliage hits rather than counting them, or the tree line alone would failsafe the quad.
-        bool blocked = false;
-        var hits = Physics.RaycastAll(pilot.position, (transform.position - pilot.position).normalized,
-                                      d, ~0, QueryTriggerInteraction.Ignore);
-        foreach (var h in hits)
-        {
-            var root = h.transform.root;
-            if (root == transform.root) continue;
-            if (root != null && (root.name == "Tree" || root.name == "Bush")) continue;
-            blocked = true;
-            break;
-        }
-        occlusion = Mathf.MoveTowards(occlusion, blocked ? 1f : 0f, Time.deltaTime * (blocked ? 2f : 4f));
-
-        Quality = Mathf.Clamp01(rangeQ * (1f - occlusionLoss * occlusion));
+        Quality = serialLost ? 0f : RfQuality();
 
         // Only a flying quad can be failsafed, and the countdown has to be sustained: a momentary
         // flicker as you pass behind a pole is not a lost link.
@@ -106,5 +96,31 @@ public class RcLink : MonoBehaviour
                 else crash.ShowMessage("FAILSAFE - lost RC link");
             }
         }
+    }
+
+    /// <summary>Link quality from range and whatever is standing in the way, 0..1.</summary>
+    float RfQuality()
+    {
+        if (pilot == null) return 1f;
+
+        float d = Vector3.Distance(pilot.position, transform.position);
+        float rangeQ = 1f - Mathf.Clamp01((d - rangeFullSignal) / Mathf.Max(1f, rangeNoSignal - rangeFullSignal));
+
+        // Trees do not block 2.4 GHz meaningfully; walls and terrain do. Skip straight past
+        // foliage hits rather than counting them, or the tree line alone would failsafe the quad.
+        bool blocked = false;
+        var hits = Physics.RaycastAll(pilot.position, (transform.position - pilot.position).normalized,
+                                      d, ~0, QueryTriggerInteraction.Ignore);
+        foreach (var h in hits)
+        {
+            var root = h.transform.root;
+            if (root == transform.root) continue;
+            if (root != null && (root.name == "Tree" || root.name == "Bush")) continue;
+            blocked = true;
+            break;
+        }
+        occlusion = Mathf.MoveTowards(occlusion, blocked ? 1f : 0f, Time.deltaTime * (blocked ? 2f : 4f));
+
+        return Mathf.Clamp01(rangeQ * (1f - occlusionLoss * occlusion));
     }
 }

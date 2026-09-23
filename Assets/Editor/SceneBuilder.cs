@@ -2079,6 +2079,11 @@ public static class SceneBuilder
         };
         manager.atmosphere = atmo;
 
+        // Real transmitter over a UART (a receiver or the RemoteSim tool on the other end)
+        var serialRc = drone.AddComponent<SerialRc>();
+        input.serialRc = serialRc;
+        osd.serialRc = serialRc;
+
         var remote = trainer.AddComponent<DevRemote>();
         remote.drone = physics;
         remote.flightController = fc;
@@ -2163,6 +2168,9 @@ public static class SceneBuilder
 
     static void ConfigureProject()
     {
+        // System.IO.Ports (the UART link to a real transmitter) only exists in the .NET Framework
+        // profile - the .NET Standard 2.1 profile does not ship it.
+        PlayerSettings.SetApiCompatibilityLevel(UnityEditor.Build.NamedBuildTarget.Standalone, ApiCompatibilityLevel.NET_Unity_4_8);
         PlayerSettings.productName = "Drone Trainer";
         PlayerSettings.companyName = "DroneTrainer";
         PlayerSettings.colorSpace = ColorSpace.Linear;

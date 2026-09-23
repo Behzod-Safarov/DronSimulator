@@ -41,8 +41,28 @@ public class DevRemote : MonoBehaviour
 
     float nextHeartbeat;
 
+    // Transmitter replay (rcfeed): pushes a captured stream in at 50 Hz, like a real radio.
+    byte[] rcBytes;
+    int rcPos;
+    SerialRc rcTarget;
+    float nextRcFrame;
+
     void Update()
     {
+        if (rcTarget != null && rcBytes != null && Time.unscaledTime >= nextRcFrame)
+        {
+            nextRcFrame = Time.unscaledTime + 0.02f;      // 50 Hz, a normal RC frame rate
+            int chunk = Mathf.Min(26, rcBytes.Length - rcPos);
+            if (chunk > 0)
+            {
+                var slice = new byte[chunk];
+                System.Array.Copy(rcBytes, rcPos, slice, 0, chunk);
+                rcTarget.InjectBytes(slice, chunk);
+                rcPos += chunk;
+            }
+            if (rcPos >= rcBytes.Length) rcPos = 0;       // loop the capture
+        }
+
         if (Time.unscaledTime < next) return;
         next = Time.unscaledTime + 0.1f;
         bool exists = File.Exists(path);
@@ -117,6 +137,24 @@ public class DevRemote : MonoBehaviour
                 var ap = drone.GetComponent<Autopilot>();
                 var pt = new Vector3(F(p[1]), F(p[2]), F(p[3]));
                 ap.StartMission(new[] { pt }, pt.y);
+                break;
+            }
+            case "rcfeed":
+            {
+                // Replay a captured transmitter stream into the serial link (no hardware needed).
+                var rc = drone.GetComponent<SerialRc>();
+                rcBytes = System.IO.File.ReadAllBytes(line.Substring(7).Trim());
+                rcPos = 0;
+                rcTarget = rc;
+                Debug.Log($"[DevRemote] replaying {rcBytes.Length} bytes of transmitter data");
+                break;
+            }
+            case "rcstop": rcTarget = null; rcBytes = null; Debug.Log("[DevRemote] transmitter replay stopped"); break;
+            case "rc":
+            {
+                var rc = drone.GetComponent<SerialRc>();
+                var us = rc.Channels_us;
+                Debug.Log($"[DevRemote] rc signal={rc.HasSignal} calc={rc.SecondsSinceFrame < rc.failsafeSeconds} open={rc.IsOpen} enabled={rc.enabled} status=[{rc.Status}] age={rc.SecondsSinceFrame:0.000}s fail={rc.failsafeSeconds} {rc.FramesPerSecond:0}Hz ch={us[0]},{us[1]},{us[2]},{us[3]},{us[4]},{us[5]} roll={rc.Roll:0.00} pitch={rc.Pitch:0.00} yaw={rc.Yaw:0.00} thr={rc.Throttle:0.00} arm={rc.ArmSwitch} mode={rc.ModeSwitch}");
                 break;
             }
             case "bounds":

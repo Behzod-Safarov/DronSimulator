@@ -3,8 +3,8 @@
 A PC flight simulator for teaching people to fly quadcopters, built in Unity (C#).
 The flight model is a **5-inch freestyle FPV quad** (2306 motors, 5.1" tri-blade props, 6S Li-Po),
 with a Betaflight-style flight controller (Angle / Horizon / Acro, Actual Rates, air mode),
-procedural motor sound, an analog-style FPV camera feed, USB RC-transmitter input and a
-scored lesson ladder.
+procedural motor sound, an analog-style FPV camera feed, real RC-transmitter input over USB or
+UART, and a scored lesson ladder.
 
 ## 1. Setup (first time)
 
@@ -17,6 +17,9 @@ scored lesson ladder.
 4. **Drone Trainer → Play Training Scene** (or press Play).
 
 Standalone build: File → Build Profiles → Windows → Build (the scene is already in the list).
+
+Serial input needs the **.NET Framework** API compatibility level (Project Settings → Player);
+*Build Training Scene* sets it, because `System.IO.Ports` does not exist under .NET Standard.
 
 ## 2. Controls (Mode 2 layout)
 
@@ -41,10 +44,69 @@ Arming needs the throttle at the bottom (a real quad hovers at ~35 %). Cameras: 
 (learning), **Line of sight** (pilot standing at the pit, auto-zoom, Doppler audio), **FPV**
 (on-board camera with lens distortion, video latency, noise/breakup by range and occlusion).
 
-### Using a real RC transmitter (recommended)
+### Using a real RC transmitter over USB (HID)
 Put the radio in *USB joystick / HID* mode, plug it in, press **Tab → Calibrate transmitter
 sticks** and follow the four prompts (throttle up, yaw right, pitch forward, roll right). The
 mapping is saved. Flying with the real radio is what makes sim hours transfer to the real drone.
+
+### Using a real RC transmitter over UART (serial)
+A radio with no HID mode still speaks its link protocol out of a serial pin, and the trainer
+reads that stream directly - the same bytes a flight controller sees. Wire the transmitter
+module's (or receiver's) **TX** to a USB-TTL adapter's **RX**, join the **grounds**, and leave
+the rest alone. Then **Tab → Pult UART (serial)**: pick the **Port** and **Baud**, choose the
+protocol, press **Connect**. The CH1-CH6 bars move with the sticks, which is the quickest way
+to see whether the channel order is what you think it is.
+
+| Protocol | Frame on the wire | Baud | Comes from |
+|----------|-------------------|------|------------|
+| `Crsf`   | `0xC8 len 0x16 <16 x 11 bits> crc8` | 420000 8N1 | ELRS / TBS Crossfire modules and receivers |
+| `Text`   | `$RC,1500,1500,1000,1500,1000,1000\n` (microseconds) | 115200 | Arduino / Pico / anything you write yourself |
+| `Auto`   | whichever turns up first | - | leave it here unless frames are being misread |
+
+Channels are **1 roll, 2 pitch, 3 throttle, 4 yaw, 5 arm, 6 mode** (Angle / Horizon / Acro at
+1000 / 1500 / 2000 us), all remappable in [SerialRc.cs](Assets/Scripts/Input/SerialRc.cs).
+While frames are arriving the UART outranks the gamepad and the keyboard, and the OSD shows
+`IN UART COM4 50 Hz`.
+
+Half a second of silence is a lost link: the sticks go neutral, the HUD says so, and a second
+later the failsafe cuts the motors - the same procedure [RcLink.cs](Assets/Scripts/Drone/RcLink.cs)
+runs at the edge of RF range. When the link comes back the arm switch has to be flipped off and
+on again before the motors will spin, which is the rule Betaflight enforces for the same reason.
+
+### Build your own remote (ESP32-S3 + two thumbsticks)
+[Tools/RemoteEsp32](Tools/RemoteEsp32) is firmware for a hand-built transmitter: an ESP32-S3, two
+analog thumbsticks, nothing else. It sends the text format at 50 Hz (or CRSF with one `#define`),
+learns each stick's real travel into flash, treats the spring-return left stick as a throttle
+*rate* so the setting holds when you let go, and uses the stick buttons as the arm and mode
+switches. Wiring, board settings and the calibration ritual are in
+[its README](Tools/RemoteEsp32/README.md).
+
+### Transmitter simulator (no radio needed)
+[Tools/RemoteSim](Tools/RemoteSim) is a small console app that pretends to be the radio and
+streams control data down a UART, so the serial path can be flown and tested with no hardware:
+
+A built copy ships next to the game: **`Build\RemoteSim\RemoteSim.exe`** (self-contained, no
+.NET install needed) with `remote-sim.bat` beside it, which asks for the port and then hands you
+the sticks. From source:
+
+```
+cd Tools\RemoteSim
+dotnet run -- --port COM12                     keyboard sticks, CRSF at 50 Hz
+dotnet run -- --port COM12 --format text       same frames, readable in a terminal
+dotnet run -- --port COM12 --pattern circle    hands-off: arms and flies a circle
+dotnet run -- --file frames.bin --pattern checkout --seconds 12    capture to a file
+dotnet run -- --list                           serial ports on this machine
+```
+
+Keys are W/S throttle, A/D yaw, arrows pitch/roll, SPACE arm switch, M mode switch, Q quit.
+`--pattern checkout` is a full systems check on a twelve-second loop: it arms with the throttle
+down, flies every stick, steps through all three flight modes and disarms again.
+
+A UART is a cable, so it needs two ends: either two USB-TTL adapters with TX-RX crossed and the
+grounds joined (simulator on `COM3`, trainer on `COM4`), or a virtual pair such as
+[com0com](https://sourceforge.net/projects/com0com/) when there is no hardware at all. Neither
+is needed just to check the decoder - a captured file can be replayed straight into a running
+sim, see §6.
 
 ## 3. Realism model
 
@@ -185,6 +247,13 @@ If it wobbles, lower the rate PID `p`/`d`; if it feels mushy, raise `p`. A docil
   Commands include `camera`, `sticks`, `shot`, `lesson N`, `menu`, `nav <key>`, `goto x y z`,
   `blocks` (demolition block state) and `log`, whose line carries altitude, arming, `ts=`
   (time scale), `ap=` (autopilot phase) and `menu=` (front-end state).
+- `Unity.exe -projectPath <dir> -executeMethod SerialRcSelfTest.Run -rcCrsf <capture.bin> -rcText <capture.txt> -quit`
+  runs both wire-format decoders over a round trip and over real captures, logging `[RcTest] PASS/FAIL`
+  ([SerialRcSelfTest.cs](Assets/Editor/SerialRcSelfTest.cs)). The same check is on the editor menu as
+  *Drone Trainer -> Test RC link parsers*.
+- `rcfeed <capture.bin>`, `rcstop` and `rc` replay a captured transmitter stream into the serial link
+  at 50 Hz with no port open at all, and print the decoded channels, so the whole UART path - sticks,
+  arm switch, mode switch, dropout failsafe - can be driven from a script.
 
 ## 7. Project layout
 
@@ -195,12 +264,13 @@ Assets/
   Editor/CarBuilder.cs                            exact target-car model (body, glass, lights, breakaway wheels)
   Editor/TreeGenerator.cs, ProceduralTextures.cs  trees, carbon weave / leaf / grass textures
   Editor/GeneratedAssets.cs                       texture import rules, PBR material helpers
+  Editor/SerialRcSelfTest.cs                      CRSF / text decoder checks (menu + batch mode)
   External/PolyHaven/                             CC0 HDRI + PBR texture sets (downloaded)
   Shaders/FpvAnalog.shader                        FPV camera post effect
   Scripts/
     SimBootstrap.cs                               physics rate, quality
-    Drone/   DronePhysics, FlightController, Pid, Wind, PropVisuals, CrashDetector, RigidbodyCompat
-    Input/   PilotInput (joystick/gamepad/keyboard), StickCalibrator (wizard)
+    Drone/   DronePhysics, FlightController, Pid, Wind, PropVisuals, CrashDetector, RcLink (link quality + failsafe), RigidbodyCompat
+    Input/   PilotInput (UART/joystick/gamepad/keyboard), SerialRc (transmitter over serial), StickCalibrator
     Audio/   DroneAudio, WindAudio, ImpactAudio (all synthesised)
     Cameras/ ChaseCamera, LineOfSightCamera, CameraSwitcher, FpvCameraEffects
     Training/ Lesson, HoverBoxLesson, GateCourseLesson, LandingLesson, Gate, LessonManager,
@@ -209,4 +279,7 @@ Assets/
     UI/Osd.cs                                     telemetry, lesson panel, sticks, settings
     Cameras/ShowcaseCamera.cs                     cinematic orbits behind the menus
   Scenes/Training.unity, Materials/               generated
+Tools/
+  RemoteSim/                                      transmitter simulator: CRSF or text frames out of a UART
+  RemoteEsp32/                                    ESP32-S3 + two thumbsticks remote firmware (Arduino)
 ```

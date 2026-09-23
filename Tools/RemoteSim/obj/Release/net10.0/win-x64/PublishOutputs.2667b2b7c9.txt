@@ -1,0 +1,2 @@
+E:\utc\work\DroneTrainer\Build\RemoteSim\RemoteSim.pdb
+E:\utc\work\DroneTrainer\Build\RemoteSim\RemoteSim.exe
