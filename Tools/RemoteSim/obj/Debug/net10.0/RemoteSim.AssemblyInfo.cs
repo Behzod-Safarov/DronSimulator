@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RemoteSim")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+74a9b47c83e0f4e277e1589a6ed8b53a80346769")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6e168f64cdede475635710841e5ab29122e44dc9")]
 [assembly: System.Reflection.AssemblyProductAttribute("RemoteSim")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RemoteSim")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
