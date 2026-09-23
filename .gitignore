@@ -1,4 +1,7 @@
+# ---------------------------------------------------------------------------------------------
 # Unity
+# Everything here is rebuilt from Assets/, Packages/ and ProjectSettings/ on the next open.
+# ---------------------------------------------------------------------------------------------
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
@@ -8,12 +11,20 @@
 /[Uu]ser[Ss]ettings/
 /[Mm]emoryCaptures/
 /[Rr]ecordings/
+/[Aa]rtifacts/
+/[Aa]ssets/AssetStoreTools*
+/[Aa]ssets/[Ss]treamingAssets/aa/*
 
-# IDE
-.vs/
-.idea/
+# A .meta file must always travel with its asset - one without the other breaks every reference
+# to it - so nothing above is allowed to swallow a meta on its own.
+!/[Aa]ssets/**/*.meta
+
+# ---------------------------------------------------------------------------------------------
+# Project files Unity regenerates from the Assets tree
+# ---------------------------------------------------------------------------------------------
 *.csproj
 *.sln
+*.unityproj
 *.suo
 *.user
 *.userprefs
@@ -24,7 +35,45 @@
 *.mdb
 *.opendb
 *.VC.db
+.vs/
+.idea/
 
-# Crash reports
+# ---------------------------------------------------------------------------------------------
+# Tools/RemoteSim - .NET build output (bin/ alone would also catch anything named bin in Assets)
+# ---------------------------------------------------------------------------------------------
+/Tools/**/bin/
+/Tools/**/obj/
+*.nupkg
+
+# ---------------------------------------------------------------------------------------------
+# Tools/RemoteEsp32 - Arduino output, when "export compiled binary" is used
+# ---------------------------------------------------------------------------------------------
+/Tools/RemoteEsp32/build/
+*.ino.bin
+*.ino.elf
+*.ino.map
+
+# ---------------------------------------------------------------------------------------------
+# Logs written into the project root by headless editor runs and build scripts
+# ---------------------------------------------------------------------------------------------
+/*.log
 sysinfo.txt
 *.stackdump
+crashlytics-build.properties
+
+# ---------------------------------------------------------------------------------------------
+# Player builds and packages
+# ---------------------------------------------------------------------------------------------
+*.unitypackage
+*.apk
+*.aab
+ExportedObj/
+
+# ---------------------------------------------------------------------------------------------
+# OS clutter
+# ---------------------------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
