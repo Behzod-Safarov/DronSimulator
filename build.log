@@ -1,12 +1,12 @@
 [Licensing::Module] Trying to connect to existing licensing client channel...
-[Licensing::IpcConnector] Channel LicenseClient-b.chsafarov doesn't exist
 Built from '6000.3/staging' branch; Version is '6000.3.24f1 (4e7b9b5b6244) revision 5143451'; Using compiler version '194234433'; Build Type 'Release'
+[Licensing::IpcConnector] Channel LicenseClient-b.chsafarov doesn't exist
 OS: 'Windows 11  (10.0.26200) Professional' Language: 'en' Physical Memory: 32359 MB
 BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
 System  architecture: x64
 Process architecture: x64
-Date: 2026-09-22T11:28:09Z
-[Licensing::Module] Successfully launched the LicensingClient (PId: 6380)
+Date: 2026-09-23T04:27:43Z
+[Licensing::Module] Successfully launched the LicensingClient (PId: 27736)
 
 COMMAND LINE ARGUMENTS:
 C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Unity.exe
@@ -57,29 +57,29 @@ E:/utc/work/DroneTrainer
     "memorysetup-job-temp-allocator-block-size-background=1048576"
     "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
     "memorysetup-temp-allocator-size-cloud-worker=32768"
-Player connection [35336]  Target information:
+Player connection [5108]  Target information:
 
-Player connection [35336]  * "[IP] 192.168.155.243 [Port] 55504 [Flags] 2 [Guid] 414169039 [EditorId] 414169039 [Version] 1048832 [Id] WindowsEditor(7,OTDRAZRTS6) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+Player connection [5108]  * "[IP] 192.168.155.243 [Port] 55504 [Flags] 2 [Guid] 1017914189 [EditorId] 1017914189 [Version] 1048832 [Id] WindowsEditor(7,OTDRAZRTS6) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
 
-Player connection [35336]  * "[IP] 100.88.53.219 [Port] 55504 [Flags] 2 [Guid] 414169039 [EditorId] 414169039 [Version] 1048832 [Id] WindowsEditor(7,OTDRAZRTS6) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+Player connection [5108]  * "[IP] 100.88.53.219 [Port] 55504 [Flags] 2 [Guid] 1017914189 [EditorId] 1017914189 [Version] 1048832 [Id] WindowsEditor(7,OTDRAZRTS6) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
 
-Player connection [35336] Host joined multi-casting on [225.0.0.222:54997]...
-Player connection [35336] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Player connection [5108] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [5108] Host joined alternative multi-casting on [225.0.0.222:34997]...
 Input System module state changed to: Initialized.
 [Physics::Module] Initialized fallback backend.
 [Physics::Module] Id: 0xdecafbad
-[Licensing::IpcConnector] Successfully connected to: "LicenseClient-b.chsafarov" at "2026-09-22T11:28:09.8768867Z"
-[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 6380, path: "C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-b.chsafarov" at "2026-09-23T04:27:43.7328602Z"
+[Licensing::Client] Code 10 while verifying Licensing Client signature (process Id: 27736, path: "C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client.exe")
 [Licensing::Module] LicensingClient has failed validation; ignoring
 [Licensing::Client] Handshaking with LicensingClient:
   Version:                 1.18.3+d7ffd15
-  Session Id:              47b92b727e674b62ab585a406056eac0
-  Correlation Id:          7fdb39eddba6b010746eb56b309079fb
-  External correlation Id: 2161973148269719722
+  Session Id:              fa85e788a78d489480d5e1d7536a1843
+  Correlation Id:          e7b0e019df08a7cb779ac718dad6b73a
+  External correlation Id: 7934077420211950897
   Machine Id:              u7nn9bA0M0N+y1tGOo6kBn/0E8Q=
-[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-b.chsafarov" (connect: 0.24s, validation: 0.03s, handshake: 0.03s)
-[Licensing::IpcConnector] Successfully connected to: "LicenseClient-b.chsafarov-notifications" at "2026-09-22T11:28:09.9377397Z"
-[Licensing::Module] Connected to LicensingClient (PId: 6380, launch time: 0.00, total connection time: 0.31s)
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-b.chsafarov" (connect: 0.16s, validation: 0.08s, handshake: 0.03s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-b.chsafarov-notifications" at "2026-09-23T04:27:43.8390076Z"
+[Licensing::Module] Connected to LicensingClient (PId: 27736, launch time: 0.00, total connection time: 0.27s)
 [Licensing::Module] Error: Access token is unavailable; failed to update
 [Licensing::Client] Successfully resolved entitlement details
 [Licensing::Module] License group:
@@ -88,9 +88,11 @@ Input System module state changed to: Initialized.
   Type: Assigned
   Expiration: Unlimited
 [Licensing::Client] Successfully updated license, isAsync: True, time: 0.01
+[Package Manager] Connected to IPC stream "Upm-23568" after 0.2 seconds.
+[Licensing::Module] Licensing is not yet initialized.
 [Licensing::Client] Successfully resolved entitlement details
-[Licensing::Module] Licensing Background thread has ended after 0.33s
-[Package Manager] Connected to IPC stream "Upm-2084" after 0.2 seconds.
+[Licensing::Module] Licensing Background thread has ended after 0.30s
+[Licensing::Module] Licensing is initialized (took 0.00s).
 [Licensing::Client] Successfully resolved entitlement details
 Library Redirect Path: Library/
 [Physics::Module] Selected backend.
@@ -100,7 +102,7 @@ Library Redirect Path: Library/
 [Physics::Module] Integration Version: 1.0.0
 [Physics::Module] Threading Mode: Multi-Threaded
 Artifact Garbage Collection - Removed 1 unused hashed content files
-Refreshing native plugins compatible for Editor in 0.05 ms, found 0 plugins.
+Refreshing native plugins compatible for Editor in 0.04 ms, found 0 plugins.
 Preloading 0 native plugins for Editor in 0.00 ms.
 Initialize engine version: 6000.3.24f1 (4e7b9b5b6244)
 [Subsystems] Discovering subsystems at path C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/Resources/UnitySubsystems
@@ -115,7 +117,7 @@ Initialize mono
 Mono path[0] = 'C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/Managed'
 Mono path[1] = 'C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
 Mono config path = 'C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/MonoBleedingEdge/etc'
-Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56084
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56568
 Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
 Using cacheserver namespaces - metadata:defaultmetadata, artifacts:defaultartifacts
 ImportWorker Server TCP listen port: 0
@@ -123,41 +125,41 @@ AcceleratorClientConnectionCallback - disconnected - :0
 Begin MonoManager ReloadAssembly
 Registering precompiled unity dll's ...
 Register platform support module: C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/UnityEditor.WindowsStandalone.Extensions.dll
-Registered in 0.001273 seconds.
-- Loaded All Assemblies, in  0.284 seconds
+Registered in 0.001281 seconds.
+- Loaded All Assemblies, in  0.270 seconds
 Native extension for WindowsStandalone target not found
 Package Manager log level set to [2]
 ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
 Mono: successfully reloaded assembly
-- Finished resetting the current domain, in  0.250 seconds
-Domain Reload Profiling: 533ms
-	BeginReloadAssembly (107ms)
+- Finished resetting the current domain, in  0.234 seconds
+Domain Reload Profiling: 502ms
+	BeginReloadAssembly (101ms)
 		ExecutionOrderSort (0ms)
 		DisableScriptedObjects (0ms)
 		BackupInstance (0ms)
 		ReleaseScriptingObjects (0ms)
-		CreateAndSetChildDomain (19ms)
+		CreateAndSetChildDomain (15ms)
 	RebuildCommonClasses (23ms)
 	RebuildNativeTypeToScriptingClass (8ms)
-	initialDomainReloadingComplete (31ms)
-	LoadAllAssembliesAndSetupDomain (113ms)
-		LoadAssemblies (86ms)
+	initialDomainReloadingComplete (30ms)
+	LoadAllAssembliesAndSetupDomain (106ms)
+		LoadAssemblies (84ms)
 		RebuildTransferFunctionScriptingTraits (0ms)
-		AnalyzeDomain (111ms)
-			TypeCache.Refresh (109ms)
-				TypeCache.ScanAssembly (99ms)
+		AnalyzeDomain (104ms)
+			TypeCache.Refresh (102ms)
+				TypeCache.ScanAssembly (92ms)
 			BuildScriptInfoCaches (0ms)
 			ResolveRequiredComponents (0ms)
-	FinalizeReload (251ms)
+	FinalizeReload (234ms)
 		ReleaseScriptCaches (0ms)
 		RebuildScriptCaches (0ms)
-		SetupLoadedEditorAssemblies (225ms)
+		SetupLoadedEditorAssemblies (211ms)
 			LogAssemblyErrors (0ms)
-			InitializePlatformSupportModulesInManaged (32ms)
+			InitializePlatformSupportModulesInManaged (29ms)
 			SetLoadedEditorAssemblies (3ms)
-			BeforeProcessingInitializeOnLoad (50ms)
-			ProcessInitializeOnLoadAttributes (89ms)
-			ProcessInitializeOnLoadMethodAttributes (51ms)
+			BeforeProcessingInitializeOnLoad (47ms)
+			ProcessInitializeOnLoadAttributes (82ms)
+			ProcessInitializeOnLoadMethodAttributes (50ms)
 			AfterProcessingInitializeOnLoad (0ms)
 			EditorAssembliesLoaded (0ms)
 		ExecutionOrderSort2 (0ms)
@@ -203,139 +205,141 @@ WorkingDir: E:/utc/work/DroneTrainer
 ExitCode: 4 Duration: 0s58ms
 Rebuilding DAG because FileSignature timestamp changed: Library/Bee/1900b0aE-inputdata.json
 *** Tundra requires additional run (0.03 seconds), 0 items updated, 235 evaluated
-ExitCode: 0 Duration: 0s175ms
+ExitCode: 0 Duration: 0s168ms
 Starting: C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aE.dag" --continue-on-failure --dagfilejson="Library\Bee\1900b0aE.dag.json" --profile="Library/Bee/backend2.traceevents" ScriptAssemblies
 WorkingDir: E:/utc/work/DroneTrainer
-ExitCode: 0 Duration: 0s40ms
+ExitCode: 0 Duration: 0s39ms
 Finished compiling graph: 238 nodes, 2051 flattened edges (1937 ToBuild, 22 ToUse), maximum node priority 77
 *** Tundra build success (0.02 seconds), 0 items updated, 235 evaluated
-AssetDatabase: script compilation time: 0.558286s
+AssetDatabase: script compilation time: 0.528996s
 Begin MonoManager ReloadAssembly
-- Loaded All Assemblies, in  0.384 seconds
+Total cache size 84680116
+Total cache size after purge 84680116, took 00:00:00.0533273
+- Loaded All Assemblies, in  0.281 seconds
 Refreshing native plugins compatible for Editor in 0.17 ms, found 0 plugins.
 Native extension for WindowsStandalone target not found
 ScheduleIndexationOnStartup MainProcess:True IndexOnStartup:True
 Mono: successfully reloaded assembly
-- Finished resetting the current domain, in  0.350 seconds
-Domain Reload Profiling: 732ms
-	BeginReloadAssembly (232ms)
+- Finished resetting the current domain, in  0.335 seconds
+Domain Reload Profiling: 614ms
+	BeginReloadAssembly (137ms)
 		ExecutionOrderSort (0ms)
-		DisableScriptedObjects (13ms)
+		DisableScriptedObjects (12ms)
 		BackupInstance (0ms)
 		ReleaseScriptingObjects (0ms)
-		CreateAndSetChildDomain (132ms)
-	RebuildCommonClasses (24ms)
+		CreateAndSetChildDomain (38ms)
+	RebuildCommonClasses (22ms)
 	RebuildNativeTypeToScriptingClass (8ms)
-	initialDomainReloadingComplete (16ms)
-	LoadAllAssembliesAndSetupDomain (102ms)
-		LoadAssemblies (143ms)
+	initialDomainReloadingComplete (15ms)
+	LoadAllAssembliesAndSetupDomain (97ms)
+		LoadAssemblies (139ms)
 		RebuildTransferFunctionScriptingTraits (0ms)
-		AnalyzeDomain (25ms)
+		AnalyzeDomain (23ms)
 			TypeCache.Refresh (17ms)
-				TypeCache.ScanAssembly (13ms)
+				TypeCache.ScanAssembly (12ms)
 			BuildScriptInfoCaches (4ms)
 			ResolveRequiredComponents (1ms)
-	FinalizeReload (350ms)
+	FinalizeReload (335ms)
 		ReleaseScriptCaches (0ms)
 		RebuildScriptCaches (0ms)
-		SetupLoadedEditorAssemblies (243ms)
+		SetupLoadedEditorAssemblies (230ms)
 			LogAssemblyErrors (0ms)
 			InitializePlatformSupportModulesInManaged (14ms)
 			SetLoadedEditorAssemblies (2ms)
-			BeforeProcessingInitializeOnLoad (74ms)
-			ProcessInitializeOnLoadAttributes (123ms)
-			ProcessInitializeOnLoadMethodAttributes (26ms)
+			BeforeProcessingInitializeOnLoad (68ms)
+			ProcessInitializeOnLoadAttributes (117ms)
+			ProcessInitializeOnLoadMethodAttributes (25ms)
 			AfterProcessingInitializeOnLoad (4ms)
 			EditorAssembliesLoaded (0ms)
 		ExecutionOrderSort2 (0ms)
 		AwakeInstancesAfterBackupRestoration (15ms)
-Asset Pipeline Refresh (id=aaafb9e085e0f8142811d1b15f55f7a0): Total: 1.420 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
+Asset Pipeline Refresh (id=ae329edbda59a914395009e2b0d22ceb): Total: 1.270 seconds - Initiated by InitialRefreshV2(ForceSynchronousImport)
 	Summary:
 		Imports: total=0 (actual=0, local cache=0, cache server=0)
-		Asset DB Process Time: managed=0 ms, native=444 ms
-		Asset DB Callback time: managed=11 ms, native=11 ms
-		Scripting: domain reloads=1, domain reload time=384 ms, compile time=560 ms, other=8 ms
-		Project Asset Count: scripts=250, non-scripts=638
+		Asset DB Process Time: managed=0 ms, native=431 ms
+		Asset DB Callback time: managed=9 ms, native=9 ms
+		Scripting: domain reloads=1, domain reload time=281 ms, compile time=530 ms, other=8 ms
+		Project Asset Count: scripts=250, non-scripts=648
 		Asset File Changes: new=0, changed=0, moved=0, deleted=0
 		Scan Filter Count: 0
 	InvokeCustomDependenciesCallbacks: 0.001ms
-	InvokePackagesCallback: 12.186ms
-	ApplyChangesToAssetFolders: 0.225ms
-	Scan: 29.684ms
+	InvokePackagesCallback: 11.221ms
+	ApplyChangesToAssetFolders: 0.231ms
+	Scan: 23.999ms
 	OnSourceAssetsModified: 0.003ms
-	CategorizeAssetsWithTransientArtifact: 3.660ms
-	ProcessAssetsWithTransientArtifactChanges: 7.764ms
-	CategorizeAssets: 5.432ms
-	ImportOutOfDateAssets: 351.751ms (-208.208ms without children)
-		CompileScripts: 559.679ms
+	CategorizeAssetsWithTransientArtifact: 3.681ms
+	ProcessAssetsWithTransientArtifactChanges: 7.289ms
+	CategorizeAssets: 5.333ms
+	ImportOutOfDateAssets: 336.606ms (-193.893ms without children)
+		CompileScripts: 530.205ms
 		ReloadNativeAssets: 0.001ms
-		UnloadImportedAssets: 0.073ms
-		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.061ms
+		UnloadImportedAssets: 0.082ms
+		EnsureUptoDateAssetsAreRegisteredWithGuidPM: 0.058ms
 		InitializingProgressBar: 0.000ms
 		PostProcessAllAssetNotificationsAddChangedAssets: 0.000ms
-		OnDemandSchedulerStart: 0.145ms
-	PostProcessAllAssets: 11.609ms
+		OnDemandSchedulerStart: 0.154ms
+	PostProcessAllAssets: 9.670ms
 	GatherAllCurrentPrimaryArtifactRevisions: 0.002ms
-	UnloadStreamsBegin: 1.054ms
+	UnloadStreamsBegin: 1.022ms
 	PersistCurrentRevisions: 0.022ms
 	UnloadStreamsEnd: 0.001ms
-	GenerateScriptTypeHashes: 1.103ms
-	Untracked: 996.130ms
+	GenerateScriptTypeHashes: 1.018ms
+	Untracked: 870.715ms
 
 Application.AssetDatabase Initial Refresh End
-Scanning for USB devices : 2.814ms
+Scanning for USB devices : 2.728ms
 Initializing Unity extensions:
 [MODES] ModeService[none].Initialize
 [MODES] ModeService[none].LoadModes
 [MODES] Loading mode Default (0) for mode-current-id-Drone Trainer
-Curl error 6: Could not resolve host: config.uca.cloud.unity3d.com
 Unloading 33 Unused Serialized files (Serialized files now loaded: 0)
-Unloading 1072 unused Assets / (2.4 MB). Loaded Objects now: 1705.
-Memory consumption went from 124.1 MB to 121.7 MB.
-Total: 4.760400 ms (FindLiveObjects: 0.130700 ms CreateObjectMapping: 0.046700 ms MarkObjects: 3.687200 ms  DeleteObjects: 0.894900 ms)
+Curl error 6: Could not resolve host: config.uca.cloud.unity3d.com
+Unloading 1073 unused Assets / (2.3 MB). Loaded Objects now: 1706.
+Memory consumption went from 124.1 MB to 121.9 MB.
+Total: 4.221400 ms (FindLiveObjects: 0.130600 ms CreateObjectMapping: 0.056600 ms MarkObjects: 3.188200 ms  DeleteObjects: 0.845500 ms)
 
 Curl error 6: Could not resolve host: cdp.cloud.unity3d.com
 Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
 Starting: C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aESkipCompile.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssembliesAndTypeDB
 WorkingDir: E:/utc/work/DroneTrainer
-ExitCode: 0 Duration: 0s305ms
+ExitCode: 0 Duration: 0s286ms
 [2/3        0s] BuildPlayerDataGenerator Library/BuildPlayerData/Editor/TypeDb-All.json
-*** Tundra build success (0.28 seconds), 1 items updated, 3 evaluated
-Asset Pipeline Refresh (id=723e61bf571fb374b9808a4fd495b0e1): Total: 0.003 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
+*** Tundra build success (0.27 seconds), 1 items updated, 3 evaluated
+Asset Pipeline Refresh (id=f9e9ec41c5c22e941a1b851b988c6eca): Total: 0.002 seconds - Initiated by RefreshV2(NoUpdateAssetOptions)
 [ScriptCompilation] Requested script compilation because: Recompiling scripts for player build.
 BuildPlayer: start building target 19
 Total cache size 84680116
-Total cache size after purge 84680116, took 00:00:00.0600710
+Total cache size after purge 84680116, took 00:00:00.0583019
 Starting: C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aP.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssembliesAndTypeDB
 WorkingDir: E:/utc/work/DroneTrainer
-ExitCode: 0 Duration: 0s428ms
-[88/99      0s] CopyFiles Library/Bee/PlayerScriptAssemblies/Unity.InputSystem.ForUI.dll
+ExitCode: 0 Duration: 0s406ms
+[88/99      0s] CopyFiles Library/Bee/PlayerScriptAssemblies/Unity.InputSystem.ForUI.pdb
 [89/99      0s] CopyFiles Library/Bee/PlayerScriptAssemblies/Unity.Postprocessing.Runtime.pdb
-[90/99      0s] CopyFiles Library/Bee/PlayerScriptAssemblies/Unity.InputSystem.ForUI.pdb
-[91/99      0s] CopyFiles Library/Bee/PlayerScriptAssemblies/Unity.InputSystem.pdb
-[92/99      0s] CopyFiles Library/Bee/PlayerScriptAssemblies/Unity.Postprocessing.Runtime.dll
+[90/99      0s] CopyFiles Library/Bee/PlayerScriptAssemblies/Unity.InputSystem.ForUI.dll
+[91/99      0s] CopyFiles Library/Bee/PlayerScriptAssemblies/Unity.Postprocessing.Runtime.dll
+[92/99      0s] CopyFiles Library/Bee/PlayerScriptAssemblies/Unity.InputSystem.pdb
 [93/99      0s] CopyFiles Library/Bee/PlayerScriptAssemblies/Unity.InputSystem.dll
 [94/99      0s] Csc Library/Bee/artifacts/1900b0aP.dag/Assembly-CSharp.dll (+2 others)
 [95/99      0s] CopyFiles Library/Bee/PlayerScriptAssemblies/Assembly-CSharp.pdb
 [96/99      0s] CopyFiles Library/Bee/PlayerScriptAssemblies/Assembly-CSharp.dll
 [98/99      0s] BuildPlayerDataGenerator Library/BuildPlayerData/Player/RuntimeInitializeOnLoads.json (+1 other)
-*** Tundra build success (0.41 seconds), 10 items updated, 99 evaluated
+*** Tundra build success (0.39 seconds), 10 items updated, 99 evaluated
 Rebuilding Data files because Assets/Scenes/Training.unity is dirty (hash)
 Total cache size 84680116
-Total cache size after purge 84680116, took 00:00:00.0509196
+Total cache size after purge 84680116, took 00:00:00.0525803
 Opening scene 'Assets/Scenes/Training.unity'
 Unloading 106 Unused Serialized files (Serialized files now loaded: 0)
 Loaded scene 'Assets/Scenes/Training.unity'
-	Deserialize:            81.400 ms
-	Integration:            51.383 ms
-	Integration of assets:  1.539 ms
-	Thread Wait Time:       0.008 ms
-	Total Operation Time:   134.329 ms
-Unloading 28 unused Assets / (0.7 MB). Loaded Objects now: 12101.
-Memory consumption went from 183.5 MB to 182.8 MB.
-Total: 4.328600 ms (FindLiveObjects: 0.616500 ms CreateObjectMapping: 0.086700 ms MarkObjects: 3.337500 ms  DeleteObjects: 0.287400 ms)
+	Deserialize:            84.688 ms
+	Integration:            48.864 ms
+	Integration of assets:  2.628 ms
+	Thread Wait Time:       0.011 ms
+	Total Operation Time:   136.191 ms
+Unloading 28 unused Assets / (0.7 MB). Loaded Objects now: 12775.
+Memory consumption went from 184.2 MB to 183.5 MB.
+Total: 4.083200 ms (FindLiveObjects: 0.580400 ms CreateObjectMapping: 0.087800 ms MarkObjects: 3.143900 ms  DeleteObjects: 0.270600 ms)
 
-Created GICache directory at C:/Users/b.chsafarov/AppData/LocalLow/Unity/Caches/GiCache. Took: 0.004s, timestamps: [3.886 - 3.891]
+Created GICache directory at C:/Users/b.chsafarov/AppData/LocalLow/Unity/Caches/GiCache. Took: 0.004s, timestamps: [3.517 - 3.521]
 
 
 Mono dependencies included in the build
@@ -627,20 +631,20 @@ Dependency assembly - Mono.XBuild.Tasks.dll
 Dependency assembly - System.Security.Cryptography.Algorithms.dll
 Dependency assembly - System.Runtime.Caching.dll
 
-Unloading 249 Unused Serialized files (Serialized files now loaded: 0)
-Unloading 389 unused Assets / (20.7 MB). Loaded Objects now: 1729.
-Memory consumption went from 221.2 MB to 200.5 MB.
-Total: 4.676700 ms (FindLiveObjects: 0.090000 ms CreateObjectMapping: 0.020000 ms MarkObjects: 3.365900 ms  DeleteObjects: 1.200300 ms)
+Unloading 257 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 397 unused Assets / (36.3 MB). Loaded Objects now: 1730.
+Memory consumption went from 223.3 MB to 187.0 MB.
+Total: 5.095900 ms (FindLiveObjects: 0.071300 ms CreateObjectMapping: 0.019800 ms MarkObjects: 3.295800 ms  DeleteObjects: 1.708500 ms)
 
 Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
-Unloading 0 unused Assets / (2.3 MB). Loaded Objects now: 1729.
-Memory consumption went from 199.6 MB to 197.3 MB.
-Total: 3.591000 ms (FindLiveObjects: 0.080800 ms CreateObjectMapping: 0.019200 ms MarkObjects: 3.485600 ms  DeleteObjects: 0.004700 ms)
+Unloading 0 unused Assets / (0.8 MB). Loaded Objects now: 1730.
+Memory consumption went from 184.5 MB to 183.8 MB.
+Total: 3.053100 ms (FindLiveObjects: 0.068800 ms CreateObjectMapping: 0.018400 ms MarkObjects: 2.962400 ms  DeleteObjects: 0.003100 ms)
 
 Unloading 1 Unused Serialized files (Serialized files now loaded: 0)
-Unloading 152 unused Assets / (138.7 MB). Loaded Objects now: 1729.
-Memory consumption went from 325.0 MB to 186.3 MB.
-Total: 17.264700 ms (FindLiveObjects: 0.066200 ms CreateObjectMapping: 0.017000 ms MarkObjects: 3.474800 ms  DeleteObjects: 13.706200 ms)
+Unloading 152 unused Assets / (138.7 MB). Loaded Objects now: 1730.
+Memory consumption went from 311.2 MB to 172.5 MB.
+Total: 16.523600 ms (FindLiveObjects: 0.062800 ms CreateObjectMapping: 0.014800 ms MarkObjects: 3.533100 ms  DeleteObjects: 12.912200 ms)
 
 Compiling shader "Standard"
   Pass "FORWARD" (vp)
@@ -747,7 +751,7 @@ Compiling shader "Standard"
     Prepared data for serialisation in 0.00s
   Pass FORWARD_DELTA (vp, d3d11) finished in 0.01 seconds. Local cache hits 130 (0.03s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass FORWARD_DELTA (fp, d3d11) finished in 0.00 seconds. Local cache hits 130 (0.03s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass FORWARD_DELTA (fp, d3d11) finished in 0.00 seconds. Local cache hits 130 (0.04s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass ShadowCaster (vp, d3d11) finished in 0.01 seconds. Local cache hits 16 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
@@ -759,11 +763,11 @@ Compiling shader "Standard"
     Prepared data for serialisation in 0.00s
   Pass FORWARD (vp, d3d11) finished in 0.01 seconds. Local cache hits 80 (0.02s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass FORWARD (fp, d3d11) finished in 0.00 seconds. Local cache hits 48 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass FORWARD (fp, d3d11) finished in 0.00 seconds. Local cache hits 48 (0.02s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass FORWARD_DELTA (vp, d3d11) finished in 0.01 seconds. Local cache hits 100 (0.02s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass FORWARD_DELTA (fp, d3d11) finished in 0.00 seconds. Local cache hits 100 (0.02s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass FORWARD_DELTA (fp, d3d11) finished in 0.00 seconds. Local cache hits 100 (0.03s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass ShadowCaster (vp, d3d11) finished in 0.01 seconds. Local cache hits 8 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
@@ -1026,7 +1030,7 @@ Compiling shader "Hidden/TerrainEngine/Details/BillboardWavingDoublePass"
     After built-in stripping:   4
     After scriptable stripping: 4
     Processed in 0.00 seconds
-  Pass FORWARD (vp, d3d11) finished in 0.00 seconds. Local cache hits 32 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass FORWARD (vp, d3d11) finished in 0.00 seconds. Local cache hits 32 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass FORWARD (fp, d3d11) finished in 0.00 seconds. Local cache hits 16 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
@@ -1129,7 +1133,7 @@ Compiling shader "Hidden/TerrainEngine/Splatmap/Diffuse-AddPass"
     Prepared data for serialisation in 0.00s
   Pass FORWARD (fp, d3d11) finished in 0.00 seconds. Local cache hits 64 (0.02s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass FORWARD (vp, d3d11) finished in 0.00 seconds. Local cache hits 104 (0.04s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass FORWARD (vp, d3d11) finished in 0.00 seconds. Local cache hits 104 (0.03s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass FORWARD (fp, d3d11) finished in 0.00 seconds. Local cache hits 208 (0.04s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
@@ -1141,7 +1145,7 @@ Compiling shader "Hidden/TerrainEngine/Splatmap/Diffuse-AddPass"
     Prepared data for serialisation in 0.00s
   Pass FORWARD (fp, d3d11) finished in 0.00 seconds. Local cache hits 16 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass FORWARD (vp, d3d11) finished in 0.01 seconds. Local cache hits 52 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass FORWARD (vp, d3d11) finished in 0.00 seconds. Local cache hits 52 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass FORWARD (fp, d3d11) finished in 0.00 seconds. Local cache hits 52 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
@@ -1341,11 +1345,11 @@ Compiling shader "Nature/Terrain/Diffuse"
     After built-in stripping:   4
     After scriptable stripping: 4
     Processed in 0.00 seconds
-  Pass FORWARD (vp, d3d11) finished in 0.00 seconds. Local cache hits 64 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass FORWARD (vp, d3d11) finished in 0.00 seconds. Local cache hits 64 (0.02s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass FORWARD (fp, d3d11) finished in 0.00 seconds. Local cache hits 64 (0.02s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass FORWARD (vp, d3d11) finished in 0.00 seconds. Local cache hits 104 (0.02s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass FORWARD (vp, d3d11) finished in 0.00 seconds. Local cache hits 104 (0.03s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass FORWARD (fp, d3d11) finished in 0.00 seconds. Local cache hits 208 (0.05s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
@@ -1353,23 +1357,23 @@ Compiling shader "Nature/Terrain/Diffuse"
     Prepared data for serialisation in 0.00s
   Pass DEFERRED (fp, d3d11) finished in 0.00 seconds. Local cache hits 32 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass ShadowCaster (vp, d3d11) finished in 0.01 seconds. Local cache hits 8 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass ShadowCaster (vp, d3d11) finished in 0.00 seconds. Local cache hits 8 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass ShadowCaster (fp, d3d11) finished in 0.00 seconds. Local cache hits 16 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass FORWARD (vp, d3d11) finished in 0.01 seconds. Local cache hits 32 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass FORWARD (vp, d3d11) finished in 0.00 seconds. Local cache hits 32 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass FORWARD (fp, d3d11) finished in 0.00 seconds. Local cache hits 16 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass FORWARD (vp, d3d11) finished in 0.01 seconds. Local cache hits 52 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass FORWARD (vp, d3d11) finished in 0.00 seconds. Local cache hits 52 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass FORWARD (fp, d3d11) finished in 0.00 seconds. Local cache hits 52 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass DEFERRED (vp, d3d11) finished in 0.01 seconds. Local cache hits 8 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass DEFERRED (vp, d3d11) finished in 0.00 seconds. Local cache hits 8 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass DEFERRED (fp, d3d11) finished in 0.00 seconds. Local cache hits 8 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass ShadowCaster (vp, d3d11) finished in 0.01 seconds. Local cache hits 4 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass ShadowCaster (vp, d3d11) finished in 0.00 seconds. Local cache hits 4 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass ShadowCaster (fp, d3d11) finished in 0.00 seconds. Local cache hits 4 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
@@ -1646,13 +1650,13 @@ Compiling shader "Hidden/TerrainEngine/Splatmap/Standard-AddPass"
     Processed in 0.00 seconds
   Pass FORWARD (vp, d3d11) finished in 0.00 seconds. Local cache hits 64 (0.02s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass FORWARD (fp, d3d11) finished in 0.00 seconds. Local cache hits 64 (0.03s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass FORWARD (fp, d3d11) finished in 0.00 seconds. Local cache hits 64 (0.02s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass FORWARD (vp, d3d11) finished in 0.00 seconds. Local cache hits 104 (0.03s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass FORWARD (vp, d3d11) finished in 0.00 seconds. Local cache hits 104 (0.04s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass FORWARD (fp, d3d11) finished in 0.00 seconds. Local cache hits 208 (0.05s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass DEFERRED (vp, d3d11) finished in 0.01 seconds. Local cache hits 16 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass DEFERRED (vp, d3d11) finished in 0.01 seconds. Local cache hits 16 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass DEFERRED (fp, d3d11) finished in 0.00 seconds. Local cache hits 32 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
@@ -2675,9 +2679,9 @@ Compiling shader "Hidden/PostProcessing/Uber"
   Pass "" (fp)
   Pass "" (vp)
   Pass "" (fp)
-  Pass  (vp, d3d11) finished in 0.02 seconds. Local cache hits 1728 (0.47s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass  (vp, d3d11) finished in 0.02 seconds. Local cache hits 1728 (0.40s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
-  Pass  (fp, d3d11) finished in 0.02 seconds. Local cache hits 1728 (0.43s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass  (fp, d3d11) finished in 0.02 seconds. Local cache hits 1728 (0.40s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.01s
     Prepared data for serialisation in 0.00s
     Prepared data for serialisation in 0.00s
@@ -4356,7 +4360,7 @@ Compiling shader "Hidden/Internal-DeferredShading"
     After built-in stripping:   1
     After scriptable stripping: 1
     Processed in 0.00 seconds
-  Pass  (vp, d3d11) finished in 0.00 seconds. Local cache hits 26 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
+  Pass  (vp, d3d11) finished in 0.00 seconds. Local cache hits 26 (0.00s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
   Pass  (fp, d3d11) finished in 0.00 seconds. Local cache hits 26 (0.01s CPU time), remote cache hits 0 (0.00s CPU time), compiled 0 variants (0.00s CPU time), skipped 0 variants.
     Prepared data for serialisation in 0.00s
@@ -5693,38 +5697,38 @@ SpriteAtlasDatabase::Cleanup
 Starting: C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --dagfile="Library/Bee/Player4e2f34ca.dag" --profile="Library/Bee/backend1.traceevents" Player
 WorkingDir: E:/utc/work/DroneTrainer
 DisplayProgressbar: Incremental Player Build
-ExitCode: 4 Duration: 0s473ms
+ExitCode: 4 Duration: 0s449ms
 Starting: C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\netcorerun\netcorerun.exe "C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\PlaybackEngines\WindowsStandaloneSupport\WinPlayerBuildProgram.exe" "C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/PlaybackEngines/WindowsStandaloneSupport/Bee;C:/Program Files/Unity/Hub/Editor/6000.3.24f1/Editor/Data/Tools/BuildPipeline" "Library/Bee/Player4e2f34ca.dag.json" "Library/Bee/Player4e2f34ca-inputdata.json" "Library\Bee\buildprogram0.traceevents"
 WorkingDir: E:/utc/work/DroneTrainer
-ExitCode: 0 Duration: 0s212ms
+ExitCode: 0 Duration: 0s203ms
 Starting: C:\Program Files\Unity\Hub\Editor\6000.3.24f1\Editor\Data\Tools\BuildPipeline\bee_backend.exe --ipc --dagfile="Library/Bee/Player4e2f34ca.dag" --dagfilejson="Library\Bee\Player4e2f34ca.dag.json" --profile="Library/Bee/backend2.traceevents" Player
 WorkingDir: E:/utc/work/DroneTrainer
-ExitCode: 0 Duration: 0s52ms
-Refreshing native plugins compatible for Editor in 0.21 ms, found 0 plugins.
+ExitCode: 0 Duration: 0s51ms
+Refreshing native plugins compatible for Editor in 0.22 ms, found 0 plugins.
 Preloading 0 native plugins for Editor in 0.00 ms.
 
 -------------------------------------------------------------------------------
 Build Report
 Uncompressed usage by category (Percentages based on user generated assets only):
-Textures               81.5 mb	 52.4% 
-Meshes                 42.3 mb	 27.2% 
+Textures               82.9 mb	 49.0% 
+Meshes                 22.7 mb	 13.4% 
 Animations             0.0 kb	 0.0% 
 Sounds                 0.0 kb	 0.0% 
-Shaders                1.8 mb	 1.2% 
-Other Assets           1.7 mb	 1.1% 
-Levels                 28.1 mb	 18.0% 
-File headers           25.2 kb	 0.0% 
-Total User Assets      155.5 mb	 100.0% 
-Complete build size    238.9 mb
+Shaders                1.8 mb	 1.1% 
+Other Assets           2.1 mb	 1.2% 
+Levels                 59.5 mb	 35.2% 
+File headers           25.5 kb	 0.0% 
+Total User Assets      169.1 mb	 100.0% 
+Complete build size    252.4 mb
 Used Assets and files from the Resources folder, sorted by uncompressed size:
- 8.0 mb	 3.3% Assets/External/PolyHaven/sky_kloofendal_48d_2k.hdr
- 5.3 mb	 2.2% Assets/External/PolyHaven/dirt_aerial_02_nor_gl.jpg
- 5.3 mb	 2.2% Assets/External/PolyHaven/bark_willow_02_nor_gl.jpg
- 5.3 mb	 2.2% Assets/External/PolyHaven/asphalt_pit_lane_nor_gl.jpg
- 5.3 mb	 2.2% Assets/External/PolyHaven/aerial_grass_rock_nor_gl.jpg
- 5.3 mb	 2.2% Assets/External/PolyHaven/leafy_grass_nor_gl.jpg
- 5.3 mb	 2.2% Assets/External/PolyHaven/gravel_road_nor_gl.jpg
- 3.5 mb	 1.5% Assets/Materials/Terrain.asset
+ 8.0 mb	 3.2% Assets/External/PolyHaven/sky_kloofendal_48d_2k.hdr
+ 5.3 mb	 2.1% Assets/External/PolyHaven/dirt_aerial_02_nor_gl.jpg
+ 5.3 mb	 2.1% Assets/External/PolyHaven/bark_willow_02_nor_gl.jpg
+ 5.3 mb	 2.1% Assets/External/PolyHaven/asphalt_pit_lane_nor_gl.jpg
+ 5.3 mb	 2.1% Assets/External/PolyHaven/aerial_grass_rock_nor_gl.jpg
+ 5.3 mb	 2.1% Assets/External/PolyHaven/leafy_grass_nor_gl.jpg
+ 5.3 mb	 2.1% Assets/External/PolyHaven/gravel_road_nor_gl.jpg
+ 3.9 mb	 1.5% Assets/Materials/Terrain.asset
  2.7 mb	 1.1% Built-in Texture2D: Splash Screen Unity Logo
  2.7 mb	 1.1% Assets/External/PolyHaven/aerial_grass_rock_Diffuse.jpg
  2.7 mb	 1.1% Assets/External/PolyHaven/dirt_aerial_02_Diffuse.jpg
@@ -5734,36 +5738,26 @@ Used Assets and files from the Resources folder, sorted by uncompressed size:
  2.7 mb	 1.1% Assets/Generated/Textures/Stone_Diffuse.png
  2.7 mb	 1.1% Assets/Generated/Textures/Turf_Diffuse.png
  2.7 mb	 1.1% Assets/Generated/Textures/Sand_Diffuse.png
- 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 8
- 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 11
- 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 24
  1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 22
  1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 26
- 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 13
- 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 25
- 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 28
- 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 19
- 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 12
- 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 16
- 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 4
- 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 20
- 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 9
- 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 5
- 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 27
  1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 2
- 1.8 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 10
- 1.8 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 3
- 1.8 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 29
- 1.8 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 18
- 1.8 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 21
+ 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 6
+ 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 21
+ 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 4
+ 1.9 mb	 0.8% Built-in Mesh: Combined Mesh (root: scene) 29
+ 1.9 mb	 0.7% Built-in Mesh: Combined Mesh (root: scene) 28
+ 1.9 mb	 0.7% Built-in Mesh: Combined Mesh (root: scene) 5
+ 1.9 mb	 0.7% Built-in Mesh: Combined Mesh (root: scene) 3
+ 1.8 mb	 0.7% Built-in Mesh: Combined Mesh (root: scene) 27
  1.6 mb	 0.7% Resources/unity_builtin_extra
- 1.3 mb	 0.6% Assets/Generated/Textures/dirt_aerial_02_m0.00_s0.30_MetallicSmooth.png
- 1.3 mb	 0.6% Assets/Generated/Textures/bark_willow_02_m0.00_s0.80_MetallicSmooth.png
- 1.3 mb	 0.6% Assets/Generated/Textures/asphalt_pit_lane_m0.00_s0.90_MetallicSmooth.png
- 1.3 mb	 0.6% Assets/Generated/Textures/asphalt_pit_lane_m0.00_s0.40_MetallicSmooth.png
- 1.3 mb	 0.6% Assets/Generated/Textures/aerial_grass_rock_m0.00_s0.35_MetallicSmooth.png
- 1.3 mb	 0.6% Assets/Generated/Textures/gravel_road_m0.00_s0.30_MetallicSmooth.png
- 451.0 kb	 0.2% Built-in Mesh: Combined Mesh (root: scene) 30
+ 1.3 mb	 0.5% Assets/Generated/Textures/dirt_aerial_02_m0.00_s0.30_MetallicSmooth.png
+ 1.3 mb	 0.5% Assets/Generated/Textures/bark_willow_02_m0.00_s0.80_MetallicSmooth.png
+ 1.3 mb	 0.5% Assets/Generated/Textures/bark_willow_02_m0.00_s0.70_MetallicSmooth.png
+ 1.3 mb	 0.5% Assets/Generated/Textures/asphalt_pit_lane_m0.00_s0.90_MetallicSmooth.png
+ 1.3 mb	 0.5% Assets/Generated/Textures/asphalt_pit_lane_m0.00_s0.40_MetallicSmooth.png
+ 1.3 mb	 0.5% Assets/Generated/Textures/aerial_grass_rock_m0.00_s0.35_MetallicSmooth.png
+ 1.3 mb	 0.5% Assets/Generated/Textures/gravel_road_m0.00_s0.30_MetallicSmooth.png
+ 1.3 mb	 0.5% Built-in Mesh: Combined Mesh (root: scene) 30
  410.0 kb	 0.2% Packages/com.unity.postprocessing/PostProcessing/Shaders/Builtins/Uber.shader
  363.8 kb	 0.1% Packages/com.unity.postprocessing/PostProcessing/Shaders/Builtins/MultiScaleVOUpsample.compute
  341.5 kb	 0.1% Assets/Generated/Textures/Corrugated_0.60_0.20_0.10_Normal.png
@@ -5789,6 +5783,7 @@ Used Assets and files from the Resources folder, sorted by uncompressed size:
  170.8 kb	 0.1% Assets/Generated/Textures/Concrete_0.66_0.61_0.54_8_Albedo.png
  170.8 kb	 0.1% Assets/Generated/Textures/Carbon_Albedo.png
  156.6 kb	 0.1% Packages/com.unity.postprocessing/PostProcessing/Shaders/Builtins/MultiScaleVORender.compute
+ 97.5 kb	 0.0% Assets/Generated/Meshes/Tree_3.asset
  85.5 kb	 0.0% Assets/Generated/Textures/ChainLink_Cutout.png
  85.5 kb	 0.0% Assets/Generated/Textures/Brushed_Normal.png
  64.1 kb	 0.0% Packages/com.unity.postprocessing/PostProcessing/Textures/BlueNoise256px/LDR_LLL1_7.png
@@ -5807,6 +5802,7 @@ Used Assets and files from the Resources folder, sorted by uncompressed size:
  22.3 kb	 0.0% Assets/Generated/Meshes/PaintDisc_0.575.asset
  21.4 kb	 0.0% Packages/com.unity.postprocessing/PostProcessing/Shaders/Builtins/SubpixelMorphologicalAntialiasing.shader
  20.2 kb	 0.0% Packages/com.unity.postprocessing/PostProcessing/Shaders/Debug/Overlays.shader
+ 18.5 kb	 0.0% Assets/Generated/Meshes/Rock_2.asset
  18.0 kb	 0.0% Packages/com.unity.postprocessing/PostProcessing/Shaders/Builtins/MotionBlur.shader
  14.3 kb	 0.0% Assets/Generated/Meshes/Drone_BladeCW.asset
  14.3 kb	 0.0% Assets/Generated/Meshes/Drone_BladeCCW.asset
@@ -5987,8 +5983,12 @@ Used Assets and files from the Resources folder, sorted by uncompressed size:
  1.3 kb	 0.0% Assets/Generated/Meshes/Ramp.asset
  1.1 kb	 0.0% Packages/com.unity.postprocessing/PostProcessing/Textures/SMAA/SearchTex.tga
  0.9 kb	 0.0% Assets/Materials/DesertScrub.mat
- 0.9 kb	 0.0% Assets/Materials/Leaves2.mat
- 0.9 kb	 0.0% Assets/Materials/Leaves.mat
+ 0.9 kb	 0.0% Assets/Materials/Leaves_5.mat
+ 0.9 kb	 0.0% Assets/Materials/Leaves_4.mat
+ 0.9 kb	 0.0% Assets/Materials/Leaves_3.mat
+ 0.9 kb	 0.0% Assets/Materials/Leaves_2.mat
+ 0.9 kb	 0.0% Assets/Materials/Leaves_1.mat
+ 0.9 kb	 0.0% Assets/Materials/Leaves_0.mat
  0.9 kb	 0.0% Assets/Materials/Fence.mat
  0.9 kb	 0.0% Assets/Materials/SafetyNet.mat
  0.9 kb	 0.0% Assets/Materials/HoverZone.mat
@@ -5996,9 +5996,11 @@ Used Assets and files from the Resources folder, sorted by uncompressed size:
  0.9 kb	 0.0% Assets/Materials/CarGlass.mat
  0.9 kb	 0.0% Assets/Materials/SpoilDirt.mat
  0.9 kb	 0.0% Assets/Materials/QuarryRock.mat
+ 0.9 kb	 0.0% Assets/Materials/FieldStone.mat
  0.9 kb	 0.0% Assets/Materials/RockFace.mat
  0.9 kb	 0.0% Assets/Materials/Concrete.mat
  0.9 kb	 0.0% Assets/Materials/CityWall.mat
+ 0.9 kb	 0.0% Assets/Materials/BarkDark.mat
  0.9 kb	 0.0% Assets/Materials/Asphalt.mat
  0.9 kb	 0.0% Assets/Materials/Bark.mat
  0.9 kb	 0.0% Assets/Materials/WarehouseWall.mat
@@ -6510,6 +6512,7 @@ Used Assets and files from the Resources folder, sorted by uncompressed size:
  0.1 kb	 0.0% Assets/Scripts/Input/PilotInput.cs
  0.1 kb	 0.0% Assets/Scripts/Drone/PropVisuals.cs
  0.1 kb	 0.0% Assets/Scripts/Drone/DronePhysics.cs
+ 0.1 kb	 0.0% Assets/Scripts/Cameras/FpvMonitor.cs
  0.1 kb	 0.0% Assets/Scripts/Cameras/ChaseCamera.cs
  0.1 kb	 0.0% Assets/Scripts/Audio/WindAudio.cs
  0.1 kb	 0.0% Assets/Scripts/Audio/ImpactAudio.cs
@@ -6525,28 +6528,28 @@ Used Assets and files from the Resources folder, sorted by uncompressed size:
  0.1 kb	 0.0% Assets/Scripts/Drone/Pid.cs
  0.0 kb	 0.0% Assets/Materials/DronePhysMat.asset
 -------------------------------------------------------------------------------
-Unloading 336 Unused Serialized files (Serialized files now loaded: 0)
-Unloading 249 unused Assets / (2.7 MB). Loaded Objects now: 1736.
-Memory consumption went from 165.1 MB to 162.5 MB.
-Total: 4.644000 ms (FindLiveObjects: 0.105900 ms CreateObjectMapping: 0.019500 ms MarkObjects: 3.561900 ms  DeleteObjects: 0.955900 ms)
+Unloading 345 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 255 unused Assets / (2.7 MB). Loaded Objects now: 1737.
+Memory consumption went from 166.1 MB to 163.4 MB.
+Total: 4.478200 ms (FindLiveObjects: 0.103800 ms CreateObjectMapping: 0.015400 ms MarkObjects: 3.442200 ms  DeleteObjects: 0.916200 ms)
 
 DisplayProgressNotification: Build Successful
 Build Finished, Result: Success.
-##utp:{"type":"PlayerBuildInfo","version":2,"phase":"Immediate","time":1790076495340,"processId":2084,"steps":[{"description":"Preprocess Player","duration":8},{"description":"Prepare For Build","duration":5},{"description":"ProducePlayerScriptAssemblies","duration":893},{"description":"Verify Build setup","duration":14},{"description":"Prepare assets for target platform","duration":2},{"description":"Prepare splash screen","duration":0},{"description":"Building scenes","duration":345},{"description":"Build scripts DLLs","duration":15},{"description":"Build GlobalGameManagers file","duration":79},{"description":"Writing asset files","duration":492},{"description":"Building Resources/unity_builtin_extra","duration":35},{"description":"Write data build dirty tracking information","duration":25},{"description":"Postprocess built player","duration":902}],"duration":2815}
+##utp:{"type":"PlayerBuildInfo","version":2,"phase":"Immediate","time":1790137668873,"processId":23568,"steps":[{"description":"Preprocess Player","duration":9},{"description":"Prepare For Build","duration":5},{"description":"ProducePlayerScriptAssemblies","duration":840},{"description":"Verify Build setup","duration":13},{"description":"Prepare assets for target platform","duration":3},{"description":"Prepare splash screen","duration":0},{"description":"Building scenes","duration":368},{"description":"Build scripts DLLs","duration":15},{"description":"Build GlobalGameManagers file","duration":68},{"description":"Writing asset files","duration":482},{"description":"Building Resources/unity_builtin_extra","duration":35},{"description":"Write data build dirty tracking information","duration":24},{"description":"Postprocess built player","duration":865}],"duration":2727}
 Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
 Loaded scene 'Temp/__Backupscenes/0.backup'
-	Deserialize:            0.316 ms
-	Integration:            4.012 ms
+	Deserialize:            0.290 ms
+	Integration:            3.568 ms
 	Integration of assets:  0.001 ms
-	Thread Wait Time:       0.009 ms
-	Total Operation Time:   4.338 ms
-Unloading 0 unused Assets / (0 B). Loaded Objects now: 1729.
-Memory consumption went from 143.9 MB to 143.9 MB.
-Total: 3.707300 ms (FindLiveObjects: 0.110600 ms CreateObjectMapping: 0.026200 ms MarkObjects: 3.565000 ms  DeleteObjects: 0.004700 ms)
+	Thread Wait Time:       0.010 ms
+	Total Operation Time:   3.870 ms
+Unloading 0 unused Assets / (0 B). Loaded Objects now: 1730.
+Memory consumption went from 144.1 MB to 144.1 MB.
+Total: 3.095600 ms (FindLiveObjects: 0.091700 ms CreateObjectMapping: 0.017300 ms MarkObjects: 2.982200 ms  DeleteObjects: 0.003700 ms)
 
 Total cache size 84680116
-Total cache size after purge 84680116, took 00:00:00.0679592
-<b>Drone Trainer</b>: player build Succeeded -> E:\utc\work\DroneTrainer\Build\DroneTrainer.exe (238 MB, 0 errors)
+Total cache size after purge 84680116, took 00:00:00.0667227
+<b>Drone Trainer</b>: player build Succeeded -> E:\utc\work\DroneTrainer\Build\DroneTrainer.exe (252 MB, 0 errors)
 UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
 UnityEngine.StackTraceUtility:ExtractStackTrace ()
 UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)

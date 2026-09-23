@@ -17,8 +17,10 @@ public class CrashDetector : MonoBehaviour
     public float upsideDownTimeout = 1.5f;
     public bool autoReset = true;
     public float autoResetDelay = 1.5f;
-    [Tooltip("Kept inside the 256m PhysX broadphase world bounds (ProjectSettings/DynamicsManager)")]
-    public float worldRadius = 250f;
+    [Tooltip("Must stay inside the PhysX broadphase world bounds (ProjectSettings/DynamicsManager, 600 m)")]
+    public float worldRadius = 470f;
+    [Tooltip("Warn this many metres before the boundary instead of just crashing at it")]
+    public float boundaryWarning = 45f;
 
     public Transform spawnPoint;
     /// <summary>Scenarios that handle impacts themselves (demolition) turn crash detection off.</summary>
@@ -38,6 +40,8 @@ public class CrashDetector : MonoBehaviour
     float upsideDownSince = -1f;
     float crashedAt;
     float respawnedAt = -10f;
+    string lastHit;
+    float nextBoundaryWarn;
 
     void Awake()
     {
@@ -48,7 +52,10 @@ public class CrashDetector : MonoBehaviour
     void OnCollisionEnter(Collision c)
     {
         float speed = c.relativeVelocity.magnitude;
-        if (Time.time - respawnedAt < 0.5f) return; // settling onto the pad after a respawn is not an impact
+        if (Time.time - respawnedAt < 0.5f) return;   // settling onto the pad after a respawn is not an impact
+        // Remember what was hit so the crash can say so - "you hit a tree" beats a bare CRASH.
+        var root = c.collider.transform.root;
+        lastHit = root != null && root != transform ? root.name : c.collider.name;
         OnImpact?.Invoke(speed);
         if (Crashed || suppressCrashes) return;
         if (speed > crashSpeed)
@@ -84,8 +91,13 @@ public class CrashDetector : MonoBehaviour
         }
 
         Vector3 p = transform.position;
-        if (p.y < -5f || new Vector2(p.x, p.z).magnitude > worldRadius)
-            Crash("Out of bounds");
+        float fromHome = new Vector2(p.x, p.z).magnitude;
+        if (p.y < -5f || fromHome > worldRadius) Crash("Out of bounds");
+        else if (fromHome > worldRadius - boundaryWarning && Time.time > nextBoundaryWarn)
+        {
+            nextBoundaryWarn = Time.time + 2f;
+            ShowMessage("Turn back - edge of the flying area");
+        }
     }
 
     int NearestMotor(Vector3 worldPoint)
@@ -103,6 +115,8 @@ public class CrashDetector : MonoBehaviour
 
     void Crash(string why)
     {
+        if (why.StartsWith("CRASH") && !string.IsNullOrEmpty(lastHit)) why += "  -  " + lastHit;
+        lastHit = null;
         Crashed = true;
         crashedAt = Time.time;
         CrashCount++;

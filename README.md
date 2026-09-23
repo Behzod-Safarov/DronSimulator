@@ -86,6 +86,17 @@ other), 3D with Doppler in line-of-sight view, airflow noise in FPV, impact thum
 - Lighting: **Poly Haven HDRI sky** (`kloofendal_48d_partly_cloudy`) for skybox, ambient and
   reflections; the sun light is aimed at the HDRI's brightest texel automatically. Post-processing
   stack v2: ambient occlusion, bloom, ACES tone-mapping, motion blur, SMAA.
+- **Views**: chase, line of sight and the drone.s own FPV camera. The main view is changed from
+  the screen - **click a button in the bottom-left row**, press **1 / 2 / 3**, or **C** to cycle.
+- **Second view inset**: whichever view is not the main one renders into a corner monitor
+  ([FpvMonitor.cs](Assets/Scripts/Cameras/FpvMonitor.cs)) - so the drone camera is watchable while
+  you fly line-of-sight, the way a spotter watches a pilot.s feed. **Click the inset to swap it
+  into the main view**, or **V** to hide it. If the main view takes over the camera the inset was
+  showing, the inset falls back to another one instead of going blank.
+- Horizon: a mountain ring beyond the tree line (terrain height range 170 m), so the field sits in
+  a valley instead of ending flat against the sky.
+- Ground cover: three detail types - lush tufts, bleached dry tufts and sparse flowering weeds -
+  mixed by biome, plus field stones worked up through the meadow grass.
 - FPV post-effect ([FpvAnalog.shader](Assets/Shaders/FpvAnalog.shader)): fisheye (auto-zoomed to
   fill any aspect ratio), chromatic fringe, grain, scanlines, vignette, tearing/snow when far from
   the pilot or behind a building, ~28 ms video latency, throttle-dependent jello.

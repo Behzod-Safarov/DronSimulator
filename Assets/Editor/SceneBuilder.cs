@@ -252,7 +252,11 @@ public static class SceneBuilder
     // ------------------------------------------------------------------ terrain
 
     const float TerrainSize = 1000f;
-    const float TerrainHeight = 80f;
+    // Raised from 80 m so the horizon ring can be actual mountains: normalised heights are
+    // fractions of this, so every legacy term below is scaled by LegacyScale to keep its metres.
+    const float TerrainHeight = 170f;
+    const float LegacyScale = 80f / TerrainHeight;
+    const float GroundLevel = 1f;                 // metres of terrain below y = 0 at the flying field
 
     static Terrain BuildTerrain()
     {
@@ -297,10 +301,11 @@ public static class SceneBuilder
                 float flat = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 110f) / 150f));
                 float far = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 300f) / 200f));
                 float fieldMask = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 30f) / 60f));
-                float h = (hills * (0.06f + 0.25f * far) * flat + micro * fieldMask + rock * flat) * (1f - VenueBuilder.Flat(wx, wz));
-                h -= VenueBuilder.Pond(wx, wz) * 0.04f; // carve the farm pond basin (~3.2 m deep)
+                float h = (hills * (0.06f + 0.25f * far) * flat + micro * fieldMask + rock * flat) * (1f - VenueBuilder.Flat(wx, wz)) * LegacyScale;
+                h += Mountains(wx, wz, r);
+                h -= VenueBuilder.Pond(wx, wz) * 0.04f * LegacyScale; // carve the farm pond basin (~3.2 m deep)
                 h += VenueBuilder.HeightOffset(wx, wz) / TerrainHeight; // biome shaping: mesa, dunes, rubble mounds, quarry basin
-                heights[y, x] = 0.0125f + h;
+                heights[y, x] = GroundLevel / TerrainHeight + h;
             }
         data.SetHeights(0, 0, heights);
 
@@ -342,6 +347,10 @@ public static class SceneBuilder
                 float slopeExposure = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((slopeDeg - 22f) / 20f));
                 d = Mathf.Max(d, slopeExposure * 0.75f);
                 g = Mathf.Max(g, slopeExposure * 0.35f);
+                // The horizon massifs are rock, not sand: bare stone on their faces, thinning to
+                // scrubby ground at the foot, otherwise they read as smooth dunes.
+                float alpine = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 300f) / 120f));
+                float stoneW = Mathf.Clamp01(alpine * (0.85f + 0.4f * slopeExposure));
                 // Muddy shore around the pond (the water plane itself covers the flooded centre).
                 d = Mathf.Max(d, Mathf.Clamp01(VenueBuilder.Pond(wx, wz) * 1.5f) * 0.5f);
                 float veg = (1f - d) * (1f - g);
@@ -358,6 +367,8 @@ public static class SceneBuilder
                     Blend(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, urban, 0f, 0.15f, Mathf.Max(g, 0.3f), 0.04f, 0f, 0.55f);
                 if (quarryW > 0f)
                     Blend(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, quarryW, 0f, 0.15f, Mathf.Max(g, 0.25f), 0f, 0.05f, 0.62f);
+                if (stoneW > 0f)
+                    Blend(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, stoneW, w0 * 0.25f, 0.12f, 0.1f, w3 * 0.3f, 0.05f, 0.78f);
                 alpha[y, x, 0] = w0;
                 alpha[y, x, 1] = w1;
                 alpha[y, x, 2] = w2;
@@ -376,18 +387,47 @@ public static class SceneBuilder
             prototypeTexture = tuft,
             renderMode = DetailRenderMode.GrassBillboard,
             usePrototypeMesh = false,
-            minWidth = 0.3f, maxWidth = 0.55f,
-            minHeight = 0.18f, maxHeight = 0.36f,
-            healthyColor = new Color(0.22f, 0.38f, 0.13f),
-            dryColor = new Color(0.46f, 0.42f, 0.2f),
+            // Taller than wide: squat quads read as blocks however good the texture is.
+            minWidth = 0.16f, maxWidth = 0.28f,
+            minHeight = 0.3f, maxHeight = 0.55f,
+            healthyColor = new Color(0.19f, 0.31f, 0.12f),
+            dryColor = new Color(0.4f, 0.36f, 0.18f),
             // Wider colour spread and a coarser noise scale than the default so grass patches read
             // as natural mottled variation instead of a uniform stamped carpet from typical altitude.
             noiseSpread = 0.55f,
             density = 1f,
         };
-        data.detailPrototypes = new[] { proto };
+        // Three grass types instead of one carpet: lush tufts, bleached dry tufts and sparse
+        // flowering weeds. Real ground cover is a mixture, and the eye reads the mixture as detail.
+        var dryProto = new DetailPrototype
+        {
+            prototypeTexture = tuft,
+            renderMode = DetailRenderMode.GrassBillboard,
+            usePrototypeMesh = false,
+            minWidth = 0.14f, maxWidth = 0.24f,
+            minHeight = 0.22f, maxHeight = 0.4f,
+            healthyColor = new Color(0.44f, 0.43f, 0.24f),
+            dryColor = new Color(0.55f, 0.5f, 0.29f),
+            noiseSpread = 0.6f,
+            density = 1f,
+        };
+        var flowerProto = new DetailPrototype
+        {
+            prototypeTexture = tuft,
+            renderMode = DetailRenderMode.GrassBillboard,
+            usePrototypeMesh = false,
+            minWidth = 0.1f, maxWidth = 0.17f,
+            minHeight = 0.18f, maxHeight = 0.3f,
+            healthyColor = new Color(0.85f, 0.85f, 0.55f),
+            dryColor = new Color(0.9f, 0.78f, 0.82f),
+            noiseSpread = 0.9f,
+            density = 1f,
+        };
+        data.detailPrototypes = new[] { proto, dryProto, flowerProto };
         int dres = data.detailResolution;
         var map = new int[dres, dres];
+        var dryMap = new int[dres, dres];
+        var flowerMap = new int[dres, dres];
         var rng = new System.Random(77);
         for (int y = 0; y < dres; y++)
             for (int x = 0; x < dres; x++)
@@ -398,20 +438,32 @@ public static class SceneBuilder
                 if (r > 320f) { map[y, x] = 0; continue; }
                 float track = Mathf.Max(Mathf.Max(PitApron(wx, wz), VenueBuilder.Gravel(wx, wz)), VenueBuilder.Dirt(wx, wz));
                 float patch = Mathf.PerlinNoise(500f + wx * 0.05f, 800f + wz * 0.05f);
-                float dens = 2.8f + patch * 2.4f;
+                float dens = 3.4f + patch * 2.8f;   // enough to overlap into a carpet without becoming a mass
                 if (r > 200f) dens *= 0.5f;
-                dens *= VenueBuilder.Meadow(wx, wz); // only the meadow biome is grassed
-                map[y, x] = Mathf.FloorToInt((dens + (float)rng.NextDouble() * 0.9f) * (1f - track));
+                float meadow = VenueBuilder.Meadow(wx, wz);
+                float desert = VenueBuilder.Desert(wx, wz);
+                float open = 1f - track;
+                // lush tufts in the meadow, thinning where the ground is already dry
+                float dryN = Mathf.PerlinNoise(7000f + wx * 0.008f, 100f + wz * 0.008f);
+                map[y, x] = Mathf.FloorToInt((dens * meadow * (1f - 0.22f * dryN) + (float)rng.NextDouble() * 0.9f) * open);
+                // bleached tufts: the dry patches of the meadow, and sparse scrub out on the sand
+                float dryDens = dens * 0.28f * meadow * Mathf.Clamp01(dryN - 0.35f) + 1.4f * desert * Mathf.Clamp01(patch - 0.35f);
+                dryMap[y, x] = Mathf.FloorToInt((dryDens + (float)rng.NextDouble() * 0.6f) * open);
+                // flowering weeds: rare, clumped, meadow only
+                float bloom = Mathf.PerlinNoise(1500f + wx * 0.09f, 2400f + wz * 0.09f);
+                flowerMap[y, x] = bloom > 0.74f ? Mathf.FloorToInt(meadow * (1f + (float)rng.NextDouble() * 1.6f) * open) : 0;
             }
         data.SetDetailLayer(0, 0, 0, map);
+        data.SetDetailLayer(0, 0, 1, dryMap);
+        data.SetDetailLayer(0, 0, 2, flowerMap);
         data.wavingGrassSpeed = 0.6f;
         data.wavingGrassAmount = 0.35f;
         data.wavingGrassStrength = 0.6f;
-        data.wavingGrassTint = new Color(0.9f, 0.95f, 0.8f);
+        data.wavingGrassTint = new Color(0.78f, 0.84f, 0.7f);
 
         var go = Terrain.CreateTerrainGameObject(data);
         go.name = "Terrain";
-        go.transform.position = new Vector3(-TerrainSize * 0.5f, -TerrainHeight * 0.0125f, -TerrainSize * 0.5f);
+        go.transform.position = new Vector3(-TerrainSize * 0.5f, -GroundLevel, -TerrainSize * 0.5f);
         var terrain = go.GetComponent<Terrain>();
         terrain.heightmapPixelError = 3f;
         terrain.basemapDistance = 800f;
@@ -444,6 +496,26 @@ public static class SceneBuilder
                     h[y, x] -= move;
                     h[by, bx] += move;
                 }
+    }
+
+    /// <summary>
+    /// Mountain ring closing the horizon beyond the tree line. Without it the 1 km field
+    /// simply stops flat against the sky, which reads as a cut-out model rather than a valley.
+    /// Returns normalised height (1 = TerrainHeight).
+    /// </summary>
+    static float Mountains(float wx, float wz, float r)
+    {
+        float band = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 285f) / 165f));
+        if (band <= 0f) return 0f;
+        float ang = Mathf.Atan2(wz, wx);
+        // ridge line: a few big massifs around the compass, each broken up by two noise octaves
+        float ridges = 0.55f + 0.45f * Mathf.Sin(ang * 3f + 0.7f) * Mathf.Cos(ang * 2f - 1.3f);
+        float coarse = Mathf.PerlinNoise(900f + wx * 0.0035f, 120f + wz * 0.0035f);
+        float fine = Mathf.PerlinNoise(2500f + wx * 0.012f, 400f + wz * 0.012f);
+        float peaks = Mathf.Clamp01(ridges * (0.45f + 0.75f * coarse) + 0.25f * fine - 0.15f);
+        // sharpened: a smooth power curve gives dunes, a steeper one gives ridges and valleys
+        float metres = band * band * band * Mathf.Pow(peaks, 1.35f) * 165f;
+        return metres / TerrainHeight;
     }
 
     /// <summary>Eases the six terrain layer weights toward a biome target by k.</summary>
@@ -604,6 +676,22 @@ public static class SceneBuilder
         var leaves2 = Mat("Leaves2", new Color(0.85f, 0.95f, 0.7f), cutout: true, glossiness: 0.2f);
         leaves2.mainTexture = leafTex;
         leaves2.enableInstancing = true;
+        // A stand of real trees is never one green: deep shade, olive, sun-bleached, blue-green
+        // and a few turning/dead ones. Uniform foliage is what makes generated scenery read as fake.
+        var leafTints = new[]
+        {
+            new Color(0.62f, 0.78f, 0.55f), new Color(0.82f, 0.9f, 0.62f), new Color(0.5f, 0.66f, 0.5f),
+            new Color(0.72f, 0.84f, 0.72f), new Color(0.9f, 0.78f, 0.45f), new Color(0.66f, 0.5f, 0.32f),
+        };
+        var leafMats = new Material[leafTints.Length];
+        for (int i = 0; i < leafTints.Length; i++)
+        {
+            leafMats[i] = Mat($"Leaves_{i}", leafTints[i], cutout: true, glossiness: 0.18f);
+            leafMats[i].mainTexture = leafTex;
+            leafMats[i].enableInstancing = true;
+        }
+        var barkDark = GeneratedAssets.PbrMaterial("BarkDark", "bark_willow_02", 1f, 0.7f, new Color(0.72f, 0.68f, 0.62f));
+        barkDark.enableInstancing = true;
 
         // Variants: (mesh, height, crown radius)
         var variants = new List<(Mesh mesh, float height, float crown)>();
@@ -634,19 +722,30 @@ public static class SceneBuilder
             go.isStatic = true;
             go.transform.SetParent(trees);
             go.transform.position = new Vector3(x, y, z);
-            go.transform.rotation = Quaternion.Euler(0f, Rand(0f, 360f), 0f);
-            go.transform.localScale = Vector3.one * scale;
+            // a few degrees of lean, and trunks are never perfectly round in plan
+            go.transform.rotation = Quaternion.Euler(Rand(-4f, 4f), Rand(0f, 360f), Rand(-4f, 4f));
+            go.transform.localScale = new Vector3(scale * Rand(0.9f, 1.12f), scale * Rand(0.85f, 1.25f), scale * Rand(0.9f, 1.12f));
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterials = new[] { bark, rng.NextDouble() < 0.5 ? leaves : leaves2 };
+            // weighted so most trees are ordinary green and only a few have turned
+            double pick = rng.NextDouble();
+            int tint = pick < 0.34 ? 0 : pick < 0.58 ? 1 : pick < 0.78 ? 2 : pick < 0.9 ? 3 : pick < 0.97 ? 4 : 5;
+            mr.sharedMaterials = new[] { rng.NextDouble() < 0.35 ? barkDark : bark, leafMats[tint] };
             mr.shadowCastingMode = ShadowCastingMode.On;
+            // Unity scales a capsule/sphere radius by the LARGEST axis of the transform, and these
+            // trees have a deliberately non-uniform scale - without dividing it back out the
+            // colliders bulge past the foliage and the drone "hits a tree" while still in clear air.
+            var s = go.transform.localScale;
+            float radiusFix = 1f / Mathf.Max(0.0001f, Mathf.Max(s.x, Mathf.Max(s.y, s.z)) / Mathf.Max(0.0001f, s.x));
             var trunk = go.AddComponent<CapsuleCollider>();
             trunk.center = new Vector3(0f, height * 0.4f, 0f);
-            trunk.radius = bush ? 0.3f : 0.35f;
+            trunk.radius = (bush ? 0.22f : 0.26f) * radiusFix;
             trunk.height = height * 0.8f;
+            // Foliage is mostly air: a collider on the crown should cover the dense middle only,
+            // not the full leaf-card spread, or gaps between branches become invisible walls.
             var canopy = go.AddComponent<SphereCollider>();
             canopy.center = new Vector3(0f, height * 0.78f, 0f);
-            canopy.radius = Mathf.Max(0.5f, crown * 0.75f);
+            canopy.radius = Mathf.Max(0.35f, crown * 0.42f) * radiusFix;
         }
 
         // Scattered trees around the field (course kept clear)
@@ -669,6 +768,26 @@ public static class SceneBuilder
             float r = Rand(330f, 420f);
             Place(rng.Next(0, 3), Mathf.Cos(ang) * r, Mathf.Sin(ang) * r, Rand(1.1f, 1.5f));
         }
+        // Deadfall: logs and broken branches under the tree clumps. Woodland floors are never bare.
+        var logMesh = GeneratedAssets.SaveMesh(MeshBuilder.Lathe(new[]
+        {
+            new Vector2(0.16f, 0f), new Vector2(0.19f, 0.25f), new Vector2(0.15f, 1.6f),
+            new Vector2(0.17f, 2.6f), new Vector2(0.12f, 3.4f), new Vector2(0.03f, 3.6f),
+        }, 10, "FallenLog"), "FallenLog");
+        for (int i = 0; i < 90; i++)
+        {
+            float ang = Rand(0f, Mathf.PI * 2f), rr = Rand(45f, 260f);
+            float x = Mathf.Cos(ang) * rr, z = Mathf.Sin(ang) * rr;
+            if (VenueBuilder.Keepout(x, z, 8f) || VenueBuilder.Meadow(x, z) < 0.6f) continue;
+            float n2 = Mathf.PerlinNoise(x * 0.01f + 50f, z * 0.01f + 50f);   // same clumping as the trees
+            if (rng.NextDouble() > n2 * 1.3f) continue;
+            float y = GroundHeight(terrain, x, z);
+            var log = MeshObject("Fallen log", trees, logMesh, rng.NextDouble() < 0.5 ? bark : barkDark, new Vector3(x, y + Rand(0.1f, 0.16f), z));
+            log.transform.rotation = Quaternion.Euler(90f + Rand(-6f, 6f), Rand(0f, 360f), Rand(0f, 360f));
+            log.transform.localScale = new Vector3(Rand(0.7f, 1.3f), Rand(0.6f, 1.25f), Rand(0.7f, 1.3f));
+            log.isStatic = true;
+        }
+
         // Desert scrub: the bush variant in a bleached palette, sparse, on the sand only
         var scrub = Mat("DesertScrub", new Color(0.72f, 0.66f, 0.42f), cutout: true, glossiness: 0.12f);
         scrub.mainTexture = leafTex;
@@ -866,8 +985,8 @@ public static class SceneBuilder
 
         var ao = Add<AmbientOcclusion>();
         ao.mode.Override(AmbientOcclusionMode.MultiScaleVolumetricObscurance);
-        ao.intensity.Override(0.7f);
-        ao.thicknessModifier.Override(1.3f);
+        ao.intensity.Override(1.05f);
+        ao.thicknessModifier.Override(1.6f);
         var bloom = Add<Bloom>();
         // Restrained: at 1.3 / 0.9 the white spawn circle in direct sun bloomed into a pool of
         // glare that swallowed the drone standing on it. Only real highlights should bloom now.
@@ -876,10 +995,17 @@ public static class SceneBuilder
         bloom.softKnee.Override(0.6f);
         var cg = Add<ColorGrading>();
         cg.tonemapper.Override(Tonemapper.ACES);
-        cg.postExposure.Override(0.1f);
-        cg.saturation.Override(12f);
-        cg.contrast.Override(18f);
-        cg.temperature.Override(4f);
+        // Outdoor scenes read as flat and washed when the shadows are lifted and the midtones sit
+        // high: pull the exposure down slightly, deepen the curve, and tint the shadows cool so
+        // they separate from the warm sunlight instead of going grey.
+        cg.postExposure.Override(-0.12f);
+        cg.saturation.Override(13f);
+        cg.contrast.Override(26f);
+        cg.temperature.Override(5f);
+        cg.tint.Override(-2f);
+        cg.lift.Override(new Vector4(0.96f, 0.99f, 1.06f, -0.015f));
+        cg.gamma.Override(new Vector4(1f, 1f, 1f, -0.04f));
+        cg.gain.Override(new Vector4(1.02f, 1f, 0.97f, 0.02f));
         var mb = Add<MotionBlur>();
         mb.shutterAngle.Override(200f);
         mb.sampleCount.Override(10);
@@ -1522,6 +1648,14 @@ public static class SceneBuilder
         menu.flightController = fc;
         menu.osd = osd;
         osd.menu = menu;
+
+        // Picture-in-picture feed from the drone camera (V), so the drone view is available
+        // without giving up the chase / line-of-sight view.
+        var monitor = trainer.AddComponent<FpvMonitor>();
+        monitor.cameras = switcher;
+        monitor.input = input;
+        monitor.monitorIndex = 2;   // starts on the drone camera; clicking the inset swaps it
+        osd.fpvMonitor = monitor;
 
         // Per-venue weather / time of day
         var atmo = trainer.AddComponent<VenueAtmosphere>();

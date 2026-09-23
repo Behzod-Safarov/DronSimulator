@@ -112,12 +112,14 @@ public static class ProceduralTextures
         var px = new Color[size * size];
         for (int i = 0; i < px.Length; i++) px[i] = new Color(0.2f, 0.4f, 0.1f, 0f);
         var rng = new System.Random(9);
-        for (int b = 0; b < 40; b++)
+        // Denser and wider than hair-thin blades: thin strokes lose their alpha to mip averaging
+        // at any distance and the billboard collapses into a solid bright block.
+        for (int b = 0; b < 85; b++)
         {
-            float x0 = 0.3f + (float)rng.NextDouble() * 0.4f;                 // root near bottom centre
-            float lean = ((float)rng.NextDouble() - 0.5f) * 0.9f;
-            float h = 0.55f + (float)rng.NextDouble() * 0.45f;
-            float w = 0.008f + (float)rng.NextDouble() * 0.008f;
+            float x0 = 0.24f + (float)rng.NextDouble() * 0.52f;                // root near bottom centre
+            float lean = ((float)rng.NextDouble() - 0.5f) * 1.05f;
+            float h = 0.45f + (float)rng.NextDouble() * 0.5f;
+            float w = 0.013f + (float)rng.NextDouble() * 0.013f;
             float shade = 0.6f + (float)rng.NextDouble() * 0.5f;
             for (int y = 0; y < size * h; y++)
             {
@@ -128,8 +130,11 @@ public static class ProceduralTextures
                 for (int x = (int)(xc - half); x <= xc + half; x++)
                 {
                     if (x < 0 || x >= size) continue;
-                    float g = (0.35f + 0.45f * t) * shade;
-                    px[y * size + x] = new Color(g * 0.55f, g, g * 0.25f, 1f);
+                    float g = (0.3f + 0.4f * t) * shade;
+                    float edge = Mathf.Clamp01((half - Mathf.Abs(x - xc)) / Mathf.Max(0.5f, half));
+                    var prev = px[y * size + x];
+                    float a = Mathf.Max(prev.a, Mathf.SmoothStep(0f, 1f, edge));
+                    px[y * size + x] = new Color(g * 0.5f, g * 0.92f, g * 0.22f, a);
                 }
             }
         }

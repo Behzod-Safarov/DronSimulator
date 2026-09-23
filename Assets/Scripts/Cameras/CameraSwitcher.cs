@@ -21,7 +21,10 @@ public class CameraSwitcher : MonoBehaviour
 
     void Update()
     {
-        if (input != null && input.CameraPressed) Next();
+        if (input == null) return;
+        if (input.CameraPressed) Next();
+        // Digits pick a view directly while flying (the menus own them only in the front end).
+        if (input.ScenarioKey >= 1 && input.ScenarioKey <= Mathf.Min(3, cameras.Length)) Select(input.ScenarioKey - 1);
     }
 
     public void Next() => Select((current + 1) % Mathf.Max(1, cameras.Length));

@@ -15,6 +15,7 @@ public class Osd : MonoBehaviour
     public LessonManager lessons;
     public CameraSwitcher cameras;
     public MainMenu menu;
+    public FpvMonitor fpvMonitor;
     public bool showAxisDebug;
     public bool showSticks = true;
 
@@ -211,6 +212,26 @@ public class Osd : MonoBehaviour
         if (lessons != null && lessons.Paused && !pausedByMenu && !settingsOpen)
             GUI.Label(new Rect(0, h * 0.5f, w, big.fontSize * 1.5f), Loc.T("PAUSED"), big);
 
+        // --- FPV monitor (picture in picture, bottom-right) -------------------------
+        if (fpvMonitor != null && fpvMonitor.Feed != null && !settingsOpen && !pausedByMenu)
+        {
+            float mw = Mathf.Clamp(w * 0.22f, 220f, 460f), mh = mw * 9f / 16f;
+            var mr = new Rect(w - mw - pad, h - mh - pad - small.fontSize * 2.2f, mw, mh);
+            GUI.color = new Color(0f, 0f, 0f, 0.85f);
+            GUI.DrawTexture(new Rect(mr.x - 3f, mr.y - 3f, mr.width + 6f, mr.height + 6f), dot);
+            GUI.color = Color.white;
+            GUI.DrawTexture(mr, fpvMonitor.Feed, ScaleMode.StretchToFill, false);
+            GUI.color = new Color(0f, 0f, 0f, 0.5f);
+            GUI.DrawTexture(new Rect(mr.x, mr.y, mr.width, small.fontSize * 1.9f), dot);
+            GUI.color = new Color(0.55f, 0.92f, 1f, 0.95f);
+            GUI.Label(new Rect(mr.x + 6f, mr.y + 1f, mr.width - 12f, small.fontSize * 1.7f), Loc.T(fpvMonitor.MonitorName) + "   (V)", small);
+            GUI.color = new Color(1f, 1f, 1f, 0.8f);
+            GUI.Label(new Rect(mr.x, mr.y + 1f, mr.width - 8f, small.fontSize * 1.7f), Loc.T("click = main view"), new GUIStyle(small) { alignment = TextAnchor.UpperRight });
+            GUI.color = Color.white;
+            // Clicking the inset promotes it to the main view (and demotes the old main into it).
+            if (GUI.Button(mr, GUIContent.none, GUIStyle.none)) fpvMonitor.SwapWithMain();
+        }
+
         // --- Stick overlay (bottom centre) -----------------------------------------
         if (showSticks && input != null && !settingsOpen && !pausedByMenu)
         {
@@ -220,8 +241,26 @@ public class Osd : MonoBehaviour
             DrawStick(new Rect(w * 0.5f + 10f, y, s, s), input.Roll, input.Pitch, "ROLL / PITCH");
         }
 
+        // --- View selector (bottom-left): the main view must be changeable on screen ----
+        if (cameras != null && cameras.cameras != null && !settingsOpen && !pausedByMenu)
+        {
+            float bw = Mathf.Min(150f, w * 0.12f), bh = small.fontSize * 2.1f, gap = 6f;
+            float bx = pad, by = h - small.fontSize * 2.4f - bh - 6f;
+            for (int i = 0; i < cameras.cameras.Length && i < 3; i++)
+            {
+                var br = new Rect(bx + i * (bw + gap), by, bw, bh);
+                bool on = cameras.current == i;
+                GUI.color = on ? new Color(0.2f, 0.55f, 0.8f, 0.92f) : new Color(0f, 0f, 0f, 0.6f);
+                GUI.DrawTexture(br, dot);
+                GUI.color = Color.white;
+                var st = new GUIStyle(small) { alignment = TextAnchor.MiddleCenter, fontStyle = on ? FontStyle.Bold : FontStyle.Normal };
+                GUI.Label(br, $"{i + 1}  {Loc.T(cameras.names[i])}", st);
+                if (GUI.Button(br, GUIContent.none, GUIStyle.none)) cameras.Select(i);
+            }
+        }
+
         // --- Key help (bottom) --------------------------------------------------
-        const string help = "Arrows pitch/roll  W/S throttle  A/D yaw  |  Space arm  M mode  C camera  R reset  F drop  N next drill  Backspace retry  Esc menu  Tab settings  F1 axes";
+        string help = Loc.T("Arrows pitch/roll  W/S throttle  A/D yaw  |  Space arm  M mode  C camera  1-3 view  V drone camera  R reset  F drop  N next drill  Esc menu  Tab settings");
         if (!pausedByMenu) GUI.Label(new Rect(pad, h - small.fontSize * 1.8f, w - 2 * pad, small.fontSize * 1.6f), help, small);
 
         // --- Joystick axis debug -------------------------------------------------
@@ -347,6 +386,7 @@ public class Osd : MonoBehaviour
         GUILayout.Label("<b>" + Loc.T("Audio") + "</b>", header);
         AudioListener.volume = Slider("Master volume", AudioListener.volume, 0f, 1f, "0.00");
         showSticks = GUILayout.Toggle(showSticks, " " + Loc.T("Show stick overlay"));
+        if (fpvMonitor != null && GUILayout.Toggle(fpvMonitor.Enabled, " " + Loc.T("Show the drone camera inset (V)")) != fpvMonitor.Enabled) fpvMonitor.Toggle();
 
         GUILayout.EndScrollView();
         GUILayout.EndArea();

@@ -49,6 +49,7 @@ public class PbrTextureImporter : AssetPostprocessor
         {
             imp.alphaIsTransparency = true;
             imp.mipmapEnabled = true;
+            imp.mipMapBias = -0.45f;   // keep cut-out foliage crisp; averaged mips turn grass into blocks
         }
     }
 }

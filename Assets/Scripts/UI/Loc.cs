@@ -39,6 +39,7 @@ public static class Loc
         (@"CRASH ", "HALOKAT "),
         (@"Flipped over", "Ag'darildi"),
         (@"Out of bounds", "Chegaradan chiqdi"),
+        (@"Turn back - edge of the flying area", "Orqaga qayting - uchish maydoni chekkasi"),
         (@"Fly into the box", "Quti ichiga uching"),
         (@"Hold still\.\.\. ", "Qimirlamang... "),
         (@"Hold\.\.\. ", "Ushlab turing... "),
@@ -194,6 +195,14 @@ public static class Loc
 
         // ---- intro / pause / results ----------------------------------------------------
         // ---- navigation / settings page ----
+        ["DRONE CAMERA"] = "DRON KAMERASI",
+        ["click = main view"] = "bosing = asosiy ko'rinish",
+        ["Chase"] = "Kuzatuv",
+        ["Line of sight"] = "Uchuvchi",
+        ["FPV"] = "FPV (dron)",
+        ["Arrows pitch/roll  W/S throttle  A/D yaw  |  Space arm  M mode  C camera  1-3 view  V drone camera  R reset  F drop  N next drill  Esc menu  Tab settings"] =
+            "Strelkalar qiyalik  W/S gaz  A/D yaw  |  Space yoqish  M rejim  C kamera  1-3 ko'rinish  V dron kamerasi  R qayta  F tashlash  N keyingi mashq  Esc menyu  Tab sozlamalar",
+        ["Show the drone camera inset (V)"] = "Dron kamerasi oynasini ko'rsatish (V)",
         ["Disciplines"] = "Yo'nalishlar",
         ["Close"] = "Yopish",
         ["SETTINGS"] = "SOZLAMALAR",

@@ -181,7 +181,7 @@ public class DevRemote : MonoBehaviour
             case "log":
             {
                 Vector3 pos = drone.transform.position;
-                Debug.Log($"[DevRemote] alt={pos.y:0.00} pos=({pos.x:0.0},{pos.z:0.0}) v={drone.Body.GetVelocity().magnitude:0.00} armed={flightController.Armed} mode={flightController.mode} cam={cameras.CurrentName} bat={drone.BatteryVolts:0.0}V crashed={crashDetector.Crashed} ts={Time.timeScale:0.0} ap={ApState()} menu={(menu != null ? menu.Current.ToString() : "-")} agl={drone.HeightAboveGround:0.00} lesson={(lessons.Current != null ? lessons.Current.title + " | " + lessons.Current.Status : "free")}");
+                Debug.Log($"[DevRemote] alt={pos.y:0.00} pos=({pos.x:0.0},{pos.z:0.0}) v={drone.Body.GetVelocity().magnitude:0.00} armed={flightController.Armed} mode={flightController.mode} cam={cameras.CurrentName} bat={drone.BatteryVolts:0.0}V crashed={crashDetector.Crashed} msg=[{crashDetector.Message}] ts={Time.timeScale:0.0} ap={ApState()} menu={(menu != null ? menu.Current.ToString() : "-")} agl={drone.HeightAboveGround:0.00} lesson={(lessons.Current != null ? lessons.Current.title + " | " + lessons.Current.Status : "free")}");
                 break;
             }
             default: Debug.LogWarning($"[DevRemote] unknown command '{line}'"); break;

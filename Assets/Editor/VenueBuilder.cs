@@ -520,6 +520,19 @@ public static class VenueBuilder
             Rock(desert, slabs, rockMat, x, z, Rand(4f, 8.5f), 0.45f);
         }
 
+        // ---- meadow: stones and small boulders worked up through the grass ----
+        var field = new GameObject("Field stones").transform;
+        field.SetParent(v);
+        var fieldRock = GeneratedAssets.PbrMaterial("FieldStone", "gravel_road", 0.8f, 0.3f, new Color(0.95f, 0.94f, 0.9f));
+        for (int i = 0; i < 220; i++)
+        {
+            float a = Rand(0f, Mathf.PI * 2f), rr = Rand(22f, 150f);
+            float x = Mathf.Cos(a) * rr, z = Mathf.Sin(a) * rr;
+            if (Keepout(x, z, 6f) || Meadow(x, z) < 0.6f) continue;
+            if (rng.NextDouble() > 0.55) continue;
+            Rock(field, rocks, fieldRock, x, z, Rand(0.12f, 0.55f), 0.35f);
+        }
+
         // ---- urban: a block of derelict towers, lamp posts and kerbs ----
         var urban = new GameObject("Urban").transform;
         urban.SetParent(v);

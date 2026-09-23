@@ -45,6 +45,8 @@ public class PilotInput : MonoBehaviour
     public bool RestartLessonPressed { get; private set; }
     public bool PausePressed { get; private set; }
     public bool DebugTogglePressed { get; private set; }
+    /// <summary>Toggle the picture-in-picture FPV monitor (V).</summary>
+    public bool MonitorPressed { get; private set; }
     public bool SettingsPressed { get; private set; }
     /// <summary>Release payload (F / right shoulder).</summary>
     public bool DropPressed { get; private set; }
@@ -76,7 +78,7 @@ public class PilotInput : MonoBehaviour
     {
         float roll = 0f, pitch = 0f, yaw = 0f, throttle = 0f;
         ArmPressed = ModePressed = ResetPressed = CameraPressed = false;
-        NextLessonPressed = RestartLessonPressed = PausePressed = DebugTogglePressed = SettingsPressed = DropPressed = false;
+        NextLessonPressed = RestartLessonPressed = PausePressed = DebugTogglePressed = SettingsPressed = DropPressed = MonitorPressed = false;
         ScenarioKey = -1;
 
         var joystick = Joystick.current;
@@ -136,6 +138,7 @@ public class PilotInput : MonoBehaviour
                 RestartLessonPressed |= keyboard.backspaceKey.wasPressedThisFrame;
                 PausePressed |= keyboard.pKey.wasPressedThisFrame || keyboard.escapeKey.wasPressedThisFrame;
                 DebugTogglePressed |= keyboard.f1Key.wasPressedThisFrame;
+                MonitorPressed |= keyboard.vKey.wasPressedThisFrame;
                 DropPressed |= keyboard.fKey.wasPressedThisFrame;
                 if (keyboard.digit0Key.wasPressedThisFrame) ScenarioKey = 0;
                 if (keyboard.digit1Key.wasPressedThisFrame) ScenarioKey = 1;
@@ -155,7 +158,7 @@ public class PilotInput : MonoBehaviour
             // a menu owns the controls: no stick or button input reaches the flight controller
             roll = pitch = yaw = 0f;
             throttle = 0f;
-            ArmPressed = ModePressed = ResetPressed = CameraPressed = NextLessonPressed = RestartLessonPressed = DropPressed = false;
+            ArmPressed = ModePressed = ResetPressed = CameraPressed = NextLessonPressed = RestartLessonPressed = DropPressed = MonitorPressed = false;
             ScenarioKey = -1;
         }
         PhysicalRaw = new Vector4(roll, pitch, throttle, yaw);
