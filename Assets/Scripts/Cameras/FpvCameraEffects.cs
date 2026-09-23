@@ -82,10 +82,16 @@ public class FpvCameraEffects : MonoBehaviour
         thr /= 4f * Mathf.Max(1f, drone.OmegaMaxAtFullBattery);
         float amp = jelloDegrees * thr * thr * 4f;
         float t = Time.time;
+        // Airframe wobble, not prop frequency. These used to run at 149-211 Hz, where the sine
+        // advances 1-3 radians per rendered frame: consecutive frames sampled unrelated phases, so
+        // instead of a visible shake you got a fresh random rotation of the whole image every frame
+        // (~10 px at 1080p and full throttle). That read as mush rather than vibration, defeated
+        // SMAA, and was the thing the camera motion blur had to smear. Stay inside what the display
+        // rate can actually resolve.
         var jitter = Quaternion.Euler(
-            Mathf.Sin(t * 173f) * amp,
-            Mathf.Sin(t * 211f + 1f) * amp * 0.6f,
-            Mathf.Sin(t * 149f + 2f) * amp);
+            Mathf.Sin(t * 17f) * amp,
+            Mathf.Sin(t * 13f + 1f) * amp * 0.6f,
+            Mathf.Sin(t * 9f + 2f) * amp);
         transform.localRotation = baseLocalRotation * jitter;
     }
 

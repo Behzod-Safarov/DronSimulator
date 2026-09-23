@@ -908,10 +908,11 @@ public static class SceneBuilder
         var fx = fpv.AddComponent<FpvCameraEffects>();
         fx.shader = Shader.Find("DroneTrainer/FpvAnalog");
         fx.drone = physics;
-        // The shared PPv2 profile already darkens every camera's corners (Vignette, ~0.18); the
-        // shader's own fisheye-shaped vignette stacks on top of that for the FPV camera only, so
-        // tone it down from its old solo-use default to avoid double-darkening its corners.
-        fx.vignette = 0.15f;
+        // The FPV camera runs the FPV-only post profile, which has no Vignette override, so the
+        // shader's fisheye-shaped vignette is the only one darkening these corners and can carry
+        // its full solo-use weight (it was held at 0.15 back when the shared profile's ~0.18
+        // vignette stacked on top of it).
+        fx.vignette = 0.35f;
         fpv.AddComponent<AudioSource>();
         var windAudio = fpv.AddComponent<WindAudio>();
         windAudio.drone = physics;
@@ -970,7 +971,71 @@ public static class SceneBuilder
     static void BuildPostProcessing(Camera[] cams)
     {
 #if UNITY_POST_PROCESSING_STACK_V2
-        string profilePath = $"{MatDir}/PostProcess.asset";
+        // Two profiles, because the FPV feed must not get the cinematic-camera finish.
+        //
+        // Both carry the "scene look" every view has to agree on (ambient occlusion, bloom, ACES
+        // grading). Only the cinematic one adds motion blur, vignette, grain and chromatic
+        // aberration. FpvAnalog.shader already supplies its own, stronger grain / fisheye vignette /
+        // chromatic fringe, so those were being applied twice on the drone camera - and the motion
+        // blur was outright wrong there: a 200-degree shutter smears the frame in proportion to how
+        // fast the camera rotates, and an FPV camera rotates at acro rates. A few hundred deg/s at
+        // 60 fps is ~30 px of smear every frame at 1080p, which is why the picture turned to mush
+        // exactly when you started flying it - a real FPV camera is global-shutter and
+        // short-exposure, i.e. sharp. See also the aliased-vibration fix in
+        // FpvCameraEffects.LateUpdate, which the blur was amplifying.
+        var cinematicProfile = BuildPostProfile($"{MatDir}/PostProcess.asset", cinematicFinish: true);
+        var fpvProfile = BuildPostProfile($"{MatDir}/PostProcessFpv.asset", cinematicFinish: false);
+
+        PostProcessResources resources = null;
+        foreach (var guid in AssetDatabase.FindAssets("t:PostProcessResources"))
+        {
+            resources = AssetDatabase.LoadAssetAtPath<PostProcessResources>(AssetDatabase.GUIDToAssetPath(guid));
+            if (resources != null) break;
+        }
+
+        // A PostProcessLayer cannot drop individual effects - it takes whole volumes, selected by
+        // the volume GameObject's layer - so the FPV-only profile needs a layer to itself.
+        int fpvLayer = EnsureLayer("FpvPost");
+
+        var volumeGo = new GameObject("Post-process volume");
+        var volume = volumeGo.AddComponent<PostProcessVolume>();
+        volume.isGlobal = true;
+        volume.priority = 1f;
+        volume.sharedProfile = cinematicProfile;
+
+        if (fpvLayer > 0)
+        {
+            var fpvVolumeGo = new GameObject("Post-process volume (FPV)") { layer = fpvLayer };
+            var fpvVolume = fpvVolumeGo.AddComponent<PostProcessVolume>();
+            fpvVolume.isGlobal = true;
+            fpvVolume.priority = 1f;
+            fpvVolume.sharedProfile = fpvProfile;
+        }
+
+        foreach (var cam in cams)
+        {
+            bool isFpv = cam.GetComponent<FpvCameraEffects>() != null;
+            var layer = cam.gameObject.AddComponent<PostProcessLayer>();
+            if (resources != null) layer.Init(resources);
+            layer.volumeTrigger = cam.transform;
+            layer.volumeLayer = isFpv && fpvLayer > 0 ? 1 << fpvLayer : 1; // 1 = Default layer
+            layer.antialiasingMode = PostProcessLayer.Antialiasing.SubpixelMorphologicalAntialiasing;
+            layer.fog.enabled = true;
+            layer.fog.excludeSkybox = true;
+        }
+#else
+        Debug.LogWarning("Post Processing package not present - skipping post effects.");
+#endif
+    }
+
+#if UNITY_POST_PROCESSING_STACK_V2
+    /// <summary>
+    /// Writes a PostProcessProfile asset. <paramref name="cinematicFinish"/> adds the film-camera
+    /// layer (motion blur, vignette, grain, chromatic aberration) on top of the shared scene look;
+    /// the FPV feed leaves it off and uses FpvAnalog.shader's analog-video look instead.
+    /// </summary>
+    static PostProcessProfile BuildPostProfile(string profilePath, bool cinematicFinish)
+    {
         var profile = AssetDatabase.LoadAssetAtPath<PostProcessProfile>(profilePath);
         if (profile != null) AssetDatabase.DeleteAsset(profilePath);
         profile = ScriptableObject.CreateInstance<PostProcessProfile>();
@@ -1006,47 +1071,56 @@ public static class SceneBuilder
         cg.lift.Override(new Vector4(0.96f, 0.99f, 1.06f, -0.015f));
         cg.gamma.Override(new Vector4(1f, 1f, 1f, -0.04f));
         cg.gain.Override(new Vector4(1.02f, 1f, 0.97f, 0.02f));
-        var mb = Add<MotionBlur>();
-        mb.shutterAngle.Override(200f);
-        mb.sampleCount.Override(10);
-        var vig = Add<Vignette>();
-        vig.intensity.Override(0.18f);
-        vig.smoothness.Override(0.5f);
-        // Cheap cinematic-camera finish for chase/LOS/showcase (the FPV feed already has its own,
-        // stronger analog-video look via FpvAnalog.shader, so keep these subtle here).
-        var grain = Add<Grain>();
-        grain.intensity.Override(0.18f);
-        grain.size.Override(1.3f);
-        grain.lumContrib.Override(0.8f);
-        var ca = Add<ChromaticAberration>();
-        ca.intensity.Override(0.07f); // kept low: edge fringing hurts the precise visual feedback a flight trainer needs
+        // Cheap cinematic-camera finish for chase/LOS/showcase only - the FPV feed gets its own
+        // analog-video look from FpvAnalog.shader and would otherwise be double-graded and, worse,
+        // motion-blurred in proportion to its own rotation rate.
+        if (cinematicFinish)
+        {
+            var mb = Add<MotionBlur>();
+            mb.shutterAngle.Override(200f);
+            mb.sampleCount.Override(10);
+            var vig = Add<Vignette>();
+            vig.intensity.Override(0.18f);
+            vig.smoothness.Override(0.5f);
+            var grain = Add<Grain>();
+            grain.intensity.Override(0.18f);
+            grain.size.Override(1.3f);
+            grain.lumContrib.Override(0.8f);
+            var ca = Add<ChromaticAberration>();
+            ca.intensity.Override(0.07f); // kept low: edge fringing hurts the precise visual feedback a flight trainer needs
+        }
         EditorUtility.SetDirty(profile);
-
-        var volumeGo = new GameObject("Post-process volume");
-        var volume = volumeGo.AddComponent<PostProcessVolume>();
-        volume.isGlobal = true;
-        volume.priority = 1f;
-        volume.sharedProfile = profile;
-
-        PostProcessResources resources = null;
-        foreach (var guid in AssetDatabase.FindAssets("t:PostProcessResources"))
-        {
-            resources = AssetDatabase.LoadAssetAtPath<PostProcessResources>(AssetDatabase.GUIDToAssetPath(guid));
-            if (resources != null) break;
-        }
-        foreach (var cam in cams)
-        {
-            var layer = cam.gameObject.AddComponent<PostProcessLayer>();
-            if (resources != null) layer.Init(resources);
-            layer.volumeTrigger = cam.transform;
-            layer.volumeLayer = 1; // Default layer
-            layer.antialiasingMode = PostProcessLayer.Antialiasing.SubpixelMorphologicalAntialiasing;
-            layer.fog.enabled = true;
-            layer.fog.excludeSkybox = true;
-        }
-#else
-        Debug.LogWarning("Post Processing package not present - skipping post effects.");
+        return profile;
+    }
 #endif
+
+    /// <summary>
+    /// Returns the index of the named layer, claiming a free user slot (8-31) for it if it does not
+    /// exist yet. Returns 0 (Default) when every slot is taken, so callers can fall back.
+    /// </summary>
+    static int EnsureLayer(string name)
+    {
+        var assets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset");
+        if (assets == null || assets.Length == 0) return 0;
+        var so = new SerializedObject(assets[0]);
+        var layers = so.FindProperty("layers");
+        if (layers == null) return 0;
+
+        for (int i = 0; i < layers.arraySize; i++)
+            if (layers.GetArrayElementAtIndex(i).stringValue == name) return i;
+
+        // 0-7 are Unity's builtin slots; only 8 and up are ours to name.
+        for (int i = 8; i < layers.arraySize; i++)
+        {
+            var slot = layers.GetArrayElementAtIndex(i);
+            if (!string.IsNullOrEmpty(slot.stringValue)) continue;
+            slot.stringValue = name;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssets();
+            return i;
+        }
+        Debug.LogWarning($"Drone Trainer: no free layer slot for \"{name}\" - falling back to the Default layer.");
+        return 0;
     }
 
     // ------------------------------------------------------------------ course
