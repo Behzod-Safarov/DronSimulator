@@ -17,14 +17,19 @@ formats (322 KB flash, 22 KB RAM).
 
 | Stick | Signal | ESP32-S3 pin | Channel |
 |---|---|---|---|
-| Left | VRx | GPIO1 | yaw (4) |
-| Left | VRy | GPIO2 | throttle (3) |
+| Left | VRx | GPIO1 | throttle (3) - stick up/down |
+| Left | VRy | GPIO2 | yaw (4) - stick left/right |
 | Left | SW | GPIO5 | arm switch (5) |
-| Right | VRx | GPIO3 | roll (1) |
-| Right | VRy | GPIO4 | pitch (2) |
+| Right | VRx | GPIO3 | pitch (2) - stick up/down |
+| Right | VRy | GPIO4 | roll (1) - stick left/right |
 | Right | SW | GPIO6 | mode switch (6) |
-| Both | + | **3V3** | |
+| Both | + (often labelled **+5V**) | **3V3** | |
 | Both | GND | GND | |
+
+The channel column assumes the modules are mounted **turned 90°, pin header on the side**, as on
+the reference remote: that way each module's VRx carries up/down. Mounted the other way round,
+swap the pin numbers of each pair at the top of the sketch (`PIN_THROTTLE`/`PIN_YAW`,
+`PIN_PITCH`/`PIN_ROLL`). A direction that comes out backwards is one `INVERT_*` flag.
 
 Two things matter here:
 
@@ -58,17 +63,25 @@ firmware learns each one:
 3. The LED turns **blue** — take your hands off and let the sticks centre for about a second.
 4. Three **green** flashes: saved to flash. It is remembered across power cycles.
 
-The LED afterwards: **blue** disarmed, **green** armed, blinking **red** means no calibration has
-ever been stored (it still flies, just on default numbers).
+The LED afterwards: **blue** disarmed, **green** armed, slow blinking **red** means no calibration
+has ever been stored (it still flies, just on default numbers), and a **fast red** blink after
+pressing arm means arming was refused because the throttle stick was not idle.
+
+The remote refuses to arm unless the throttle stick is left centred (or at the bottom, with a
+real throttle). That is the "throttle low to arm" rule every flight controller has, and it also
+catches an unpowered stick: a throttle pin at 0 V looks like the stick held fully up, and without
+the check the quad would arm straight into full power.
 
 ## Connect it to the trainer
 
-1. Close the Arduino **Serial Monitor**. Only one program can hold a serial port, and the monitor
-   is the usual reason the game says the port is busy.
-2. Start Drone Trainer, press **Tab → Pult UART (serial)**.
-3. **Port** = the board's port, **Baud** 115200, protocol **Text** (or **Auto**), press **Ulanish**.
-4. The CH1–CH6 bars move with the sticks. The HUD shows `IN UART COM8 50 Hz`.
-5. Press the left stick's button to arm. Throttle up.
+1. Close the Arduino **Serial Monitor** - only one program can hold a serial port at a time.
+2. Plug the remote in and start Drone Trainer. It finds the remote by itself, on whatever COM
+   number it landed on, and the HUD's bottom line shows `IN UART COM9 50 Hz`.
+3. **Tab → Pult UART (serial)** shows the CH1-CH6 bars following the sticks.
+4. Hands off the sticks, press the left stick's button to arm, throttle up.
+
+A remote that has never been calibrated takes the sticks' resting position at power-up as their
+centre, so leave the sticks alone while you plug it in. Calibrate properly when you get a chance.
 
 ## Throttle behaviour
 
@@ -104,4 +117,6 @@ adapter or a real flight controller's RX pin. Join the grounds.
 | Stick sits off-centre, or hits the end early | Run the calibration again |
 | Throttle creeps up on its own | Stick centre drifted — recalibrate, or raise `DEADBAND` |
 | Arms, then nothing | Throttle has to be at minimum to arm; it is reset on every arm |
+| Arm button gives a fast **red** blink, won't arm | The throttle stick isn't idle - hands off it. If it keeps happening with your hands off, the throttle pin reads 0 V: no 3V3 on the stick module |
 | "RC SIGNAL LOST" then a failsafe | Frames stopped for half a second — cable, USB port, or a reset |
+| Bars pinned at 1000 / 2000 with the sticks centred | Pins read 0 V: set `DEBUG_RAW` to 1 and read the `# raw` lines - 0 means unwired or no 3V3 to the module |

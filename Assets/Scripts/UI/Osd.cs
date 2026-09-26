@@ -74,9 +74,15 @@ public class Osd : MonoBehaviour
         }
     }
 
+    Vector2Int styledFor;
+
     void BuildStyles()
     {
-        int fs = Mathf.Clamp(Screen.height / 50, 12, 26);
+        // Width matters as much as height: the settings rows are laid out in multiples of the
+        // font size, so sizing on height alone pushes the last button in a row (Connect) off the
+        // right edge of the panel on a tall, narrow window.
+        styledFor = new Vector2Int(Screen.width, Screen.height);
+        int fs = Mathf.Clamp(Mathf.Min(Screen.height / 50, Screen.width / 34), 12, 26);
         text = new GUIStyle(GUI.skin.label) { fontSize = fs, richText = true };
         text.normal.textColor = Color.white;
         small = new GUIStyle(text) { fontSize = Mathf.RoundToInt(fs * 0.8f) };
@@ -124,7 +130,8 @@ public class Osd : MonoBehaviour
 
     void OnGUI()
     {
-        if (text == null) BuildStyles();
+        // Rebuild when the window changes shape, or a resized window keeps the old text size.
+        if (text == null || styledFor.x != Screen.width || styledFor.y != Screen.height) BuildStyles();
         float w = Screen.width, h = Screen.height;
         float pad = 12f;
         float line = text.fontSize * 1.25f;
@@ -454,8 +461,12 @@ public class Osd : MonoBehaviour
         GUILayout.Label("<b>" + Loc.T("Transmitter over UART (serial)") + "</b>", header);
 
         bool live = serialRc.HasSignal;
-        string state = live ? Loc.F("connected - {0} Hz", serialRc.FramesPerSecond.ToString("0"))
+        string state = live && serialRc.IsOpen ? Loc.F("connected - {0} Hz", serialRc.FramesPerSecond.ToString("0"))
+                   : live ? Loc.F("replay - {0} Hz", serialRc.FramesPerSecond.ToString("0"))
+                   : serialRc.Scanning ? Loc.T("looking for the remote...")
+                   : serialRc.IsOpen && serialRc.BytesPerSecond > 20f ? Loc.F("data arriving, but not as {0} frames - check the protocol and baud", serialRc.protocol)
                    : serialRc.IsOpen ? Loc.T("port open, no frames")
+                   : serialRc.autoConnect ? Loc.T("no remote found - plug it in and it connects by itself")
                    : Loc.T("not connected");
         GUI.color = live ? new Color(0.6f, 1f, 0.6f) : serialRc.IsOpen ? new Color(1f, 0.85f, 0.4f) : new Color(1, 1, 1, 0.7f);
         GUILayout.Label($"{serialRc.portName}  -  {state}", text);
@@ -486,14 +497,16 @@ public class Osd : MonoBehaviour
         }
         if (GUILayout.Button(Loc.T(serialRc.IsOpen ? "Disconnect" : "Connect"), GUILayout.Width(text.fontSize * 6f)))
         {
+            serialRc.StopScan();     // a port picked by hand wins over the finder
             if (serialRc.IsOpen) serialRc.Close(); else serialRc.Open();
             serialRc.SaveSettings();
         }
         GUILayout.EndHorizontal();
 
-        if (serialRc.autoConnect != GUILayout.Toggle(serialRc.autoConnect, " " + Loc.T("Connect automatically on start")))
+        if (serialRc.autoConnect != GUILayout.Toggle(serialRc.autoConnect, " " + Loc.T("Find and connect the remote automatically")))
         {
             serialRc.autoConnect = !serialRc.autoConnect;
+            if (serialRc.autoConnect) serialRc.StartScan();
             serialRc.SaveSettings();
         }
 

@@ -18,17 +18,21 @@
 // ------------------------------------------------------------------ what is wired where
 // ADC1 pins only (GPIO1..GPIO10 on the S3). ADC2 is taken by the WiFi radio and reads garbage
 // the moment WiFi is ever switched on, which is a horrible fault to debug later.
-static const int PIN_YAW      = 1;   // left stick  X
-static const int PIN_THROTTLE = 2;   // left stick  Y
-static const int PIN_ROLL     = 3;   // right stick X
-static const int PIN_PITCH    = 4;   // right stick Y
+//
+// The sticks on this remote are mounted turned 90 degrees (pin header on the side), so each
+// module's VRx wire carries the stick's up/down and VRy carries left/right. Measured on the real
+// remote: pushing up read as left, pushing right read as up. Hence up/down on the odd pins.
+static const int PIN_THROTTLE = 1;   // left stick  up/down     (module VRx)
+static const int PIN_YAW      = 2;   // left stick  left/right  (module VRy)
+static const int PIN_PITCH    = 3;   // right stick up/down     (module VRx)
+static const int PIN_ROLL     = 4;   // right stick left/right  (module VRy)
 static const int PIN_ARM_BTN  = 5;   // left stick  SW  (to GND, internal pull-up)
 static const int PIN_MODE_BTN = 6;   // right stick SW  (to GND, internal pull-up)
 
 // Flip these if a stick moves the wrong way. Easier than re-soldering.
-static const bool INVERT_ROLL     = false;
-static const bool INVERT_PITCH    = true;    // most modules read "up" as a falling voltage
-static const bool INVERT_YAW      = false;
+static const bool INVERT_ROLL     = true;
+static const bool INVERT_PITCH    = true;
+static const bool INVERT_YAW      = true;
 static const bool INVERT_THROTTLE = true;
 
 // ------------------------------------------------------------------ how it talks
@@ -38,6 +42,12 @@ static const int PIN_UART_TX = 17;   // only used when USE_NATIVE_USB is 0
 static const int PIN_UART_RX = 18;
 
 static const int FRAME_HZ = 50;      // what a real radio sends; the sim fails safe after 0.5 s
+
+// Wiring check: also print "# raw <roll> <pitch> <throttle> <yaw>  arm=<0|1> mode=<0|1>" twice a
+// second - the ADC counts straight off the pins, before inversion or calibration. 0 means the pin
+// sees 0 V (unwired, or the stick module has no power); a centred stick reads roughly 1700-2300.
+// The game ignores any line that is not "$RC", so this is safe to leave on. Text format only.
+#define DEBUG_RAW 0
 
 #if USE_NATIVE_USB
   #define OUT Serial
@@ -64,7 +74,12 @@ struct Calibration {
   uint32_t magic;
   AxisCal axis[AXIS_COUNT];
 };
-static const uint32_t CAL_MAGIC = 0x52433031;   // "RC01"
+// A calibration belongs to one pin map: move a pin or flip an INVERT flag and every stored number
+// describes the wrong axis. The map is folded into the magic, so a changed map throws the old
+// calibration away (the remote falls back to measuring centres at power-up) instead of flying on it.
+static const uint32_t CAL_MAGIC = 0x52433032u
+    ^ ((uint32_t)PIN_ROLL | (uint32_t)PIN_PITCH << 6 | (uint32_t)PIN_THROTTLE << 12 | (uint32_t)PIN_YAW << 18)
+    ^ ((uint32_t)(INVERT_ROLL | INVERT_PITCH << 1 | INVERT_THROTTLE << 2 | INVERT_YAW << 3) << 24);
 
 static Calibration cal;
 static bool calibrated = false;
@@ -75,6 +90,7 @@ static Preferences prefs;
 static bool armed = false;
 static int  modeIndex = 0;                       // 0 Angle, 1 Horizon, 2 Acro
 static float throttleUs = 1000.0f;
+static uint32_t armRefusedUntil = 0;
 
 static const int PIN_OF[AXIS_COUNT] = { PIN_ROLL, PIN_PITCH, PIN_THROTTLE, PIN_YAW };
 static const bool INVERT_OF[AXIS_COUNT] = { INVERT_ROLL, INVERT_PITCH, INVERT_THROTTLE, INVERT_YAW };
@@ -123,6 +139,19 @@ static int axisToThrottleUs(int axis, int raw) {
   const AxisCal &c = cal.axis[axis];
   int span = max(1, (int)c.hi - (int)c.lo);
   return 1000 + constrain((raw - c.lo) * 1000 / span, 0, 1000);
+}
+
+// The remote's own "throttle low to arm" rule. With a spring-return stick, idle means the stick is
+// being left alone (centred); with a real throttle it means the bottom of travel. This also stops a
+// throttle pin reading 0 V - unwired, or a stick module with no 3V3 - which the inverted axis
+// reports as the stick held fully up: without this check the quad would arm and go straight to
+// full power.
+static bool throttleStickIdle() {
+#if THROTTLE_SPRING_RETURN
+  return axisToUs(AX_THROTTLE, (int)filtered[AX_THROTTLE]) == 1500;
+#else
+  return axisToThrottleUs(AX_THROTTLE, (int)filtered[AX_THROTTLE]) < 1050;
+#endif
 }
 
 // A button that is pressed, released and debounced, reported as a single press event.
@@ -201,6 +230,19 @@ static void runCalibration() {
   for (int i = 0; i < 3; i++) { led(0, 80, 0); delay(120); led(0, 0, 0); delay(120); }
 }
 
+// Never calibrated: take the sticks' resting position at power-up as their centre, so a fresh
+// remote still flies straight and can pass the throttle-idle check before anyone calibrates it.
+// A reading near either rail is a stick being held or a wiring fault, not a centre - that axis
+// keeps the default.
+static void captureCentres() {
+  for (int i = 0; i < AXIS_COUNT; i++) {
+    long sum = 0;
+    for (int s = 0; s < 16; s++) { sum += readAxisRaw(i); delay(2); }
+    int mid = (int)(sum / 16);
+    if (mid > 600 && mid < 3500) cal.axis[i].mid = (int16_t)mid;
+  }
+}
+
 // ------------------------------------------------------------------ frame builders
 
 #if USE_CRSF
@@ -261,6 +303,7 @@ void setup() {
 
   delay(50);
   if (digitalRead(PIN_ARM_BTN) == LOW) runCalibration();
+  else if (!calibrated) captureCentres();
 
   for (int i = 0; i < AXIS_COUNT; i++) filtered[i] = readAxisRaw(i);
 }
@@ -278,11 +321,28 @@ void loop() {
   for (int i = 0; i < AXIS_COUNT; i++)
     filtered[i] += (readAxisRaw(i) - filtered[i]) * SMOOTHING;
 
+#if DEBUG_RAW && !USE_CRSF
+  static uint32_t nextDebug = 0;
+  if ((int32_t)(now - nextDebug) >= 0) {
+    nextDebug = now + 500;
+    char dbg[80];
+    int n = snprintf(dbg, sizeof(dbg), "# raw %d %d %d %d  arm=%d mode=%d\n",
+                     analogRead(PIN_ROLL), analogRead(PIN_PITCH),
+                     analogRead(PIN_THROTTLE), analogRead(PIN_YAW),
+                     digitalRead(PIN_ARM_BTN) == LOW, digitalRead(PIN_MODE_BTN) == LOW);
+    OUT.write((const uint8_t *)dbg, n);
+  }
+#endif
+
   if (armButton.pressed()) {
-    armed = !armed;
-    // Every arm starts from closed throttle. The sim refuses to arm otherwise, and so does a
-    // real flight controller - this way the switch always does what the pilot expects.
-    if (armed) throttleUs = 1000.0f;
+    if (armed) armed = false;
+    else if (throttleStickIdle()) {
+      armed = true;
+      // Every arm starts from closed throttle. The sim refuses to arm otherwise, and so does a
+      // real flight controller - this way the switch always does what the pilot expects.
+      throttleUs = 1000.0f;
+    }
+    else armRefusedUntil = now + 1500;
   }
   if (modeButton.pressed()) modeIndex = (modeIndex + 1) % 3;
 
@@ -306,8 +366,10 @@ void loop() {
 
   sendFrame(us);
 
-  // Green armed, blue disarmed, red flicker if the sticks were never calibrated.
-  if (!calibrated && (now / 400) % 2) led(60, 0, 0);
+  // Fast red blink: arming was just refused. Green armed, blue disarmed, slow red flicker if the
+  // sticks were never calibrated.
+  if ((int32_t)(armRefusedUntil - now) > 0) led((now / 100) % 2 ? 80 : 0, 0, 0);
+  else if (!calibrated && (now / 400) % 2) led(60, 0, 0);
   else if (armed)                    led(0, 60, 0);
   else                               led(0, 0, 40);
 }

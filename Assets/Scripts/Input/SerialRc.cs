@@ -1,4 +1,7 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.IO.Ports;
 using System.Threading;
 using UnityEngine;
@@ -23,7 +26,8 @@ public class SerialRc : MonoBehaviour
     public enum Protocol { Auto, Crsf, Text }
 
     [Header("Port")]
-    public bool autoConnect;
+    [Tooltip("Find the remote on any serial port and connect by itself")]
+    public bool autoConnect = true;
     public string portName = "COM3";
     public int baudRate = 420000;
     public Protocol protocol = Protocol.Auto;
@@ -43,6 +47,7 @@ public class SerialRc : MonoBehaviour
     readonly int[] shared = new int[Channels];
     double lastFrameAt = -1000;
     int frameCount;
+    long bytesReceived;
     string threadError;
 
     // ---- state owned by Unity ------------------------------------------------------------
@@ -53,12 +58,16 @@ public class SerialRc : MonoBehaviour
     double openedAt;
     int lastFrameCount;
     float rateTimer;
+    long lastBytes;
 
     public bool IsOpen => port != null && port.IsOpen;
     /// <summary>True when the port is open and frames are arriving.</summary>
     public bool HasSignal { get; private set; }
     public float FramesPerSecond { get; private set; }
     public string Status { get; private set; } = "not connected";
+    /// <summary>Raw bytes per second off the wire, decoded or not. Bytes arriving with no frames
+    /// decoded means the port is right but the protocol or the baud rate is not.</summary>
+    public float BytesPerSecond { get; private set; }
     public string LastError { get; private set; }
     /// <summary>Raw channel values in microseconds (1000..2000), index 0..15.</summary>
     public int[] Channels_us => channels;
@@ -87,11 +96,87 @@ public class SerialRc : MonoBehaviour
     {
         LoadSettings();
         for (int i = 0; i < Channels; i++) channels[i] = i == chThrottle ? usMin : usMid;
-        if (autoConnect) Open();
+        knownPorts = AvailablePorts();
+        if (autoConnect) scan = StartCoroutine(FindRemote());
     }
 
     void OnDestroy() => Close();
     void OnApplicationQuit() => Close();
+
+    // =====================================================================================
+    // Remote finder
+    // =====================================================================================
+    // Plug the remote in, start the game, fly. The COM number changes with the USB socket and the
+    // wire format and baud rate are easy to get wrong, so with auto-connect on, the finder tries
+    // the saved port first and then every other one, at the saved baud and the two usual ones,
+    // decoding both formats, and keeps the first port that actually carries frames.
+    //
+    // Opening a port can reset whatever board sits behind it, so a port that opened and stayed
+    // silent is not touched again until the set of ports changes (something was plugged in or
+    // out). Only ports that were busy - another program had them - are retried on a timer.
+
+    Coroutine scan;
+    string[] knownPorts = new string[0];
+    readonly HashSet<string> silentPorts = new HashSet<string>();
+    readonly HashSet<string> busyPorts = new HashSet<string>();
+    float nextPortCheck;
+
+    public bool Scanning => scan != null;
+
+    IEnumerator FindRemote()
+    {
+        string savedPort = portName;
+        int savedBaud = baudRate;
+        protocol = Protocol.Auto;
+        var ports = AvailablePorts().OrderBy(p => p == savedPort ? 0 : 1).ToArray();
+        var bauds = new[] { savedBaud, 115200, 420000 }.Distinct().ToArray();
+
+        foreach (var candidate in ports)
+        {
+            if (silentPorts.Contains(candidate)) continue;
+            bool busy = false;
+            for (int b = 0; b < bauds.Length; b++)
+            {
+                portName = candidate;
+                baudRate = bauds[b];
+                Status = $"looking for the remote on {candidate}";
+                Open();
+                if (!IsOpen) { busy = true; break; }
+                // The first try on a port waits long enough for a board that reboots when its
+                // port is opened (DTR/RTS wired to reset) to come back up and start talking.
+                float until = Time.unscaledTime + (b == 0 ? 0.9f : 0.4f);
+                while (Time.unscaledTime < until && !HasSignal) yield return null;
+                if (HasSignal)
+                {
+                    busyPorts.Remove(candidate);
+                    SaveSettings();
+                    scan = null;
+                    yield break;
+                }
+                Close(false);
+            }
+            if (busy) busyPorts.Add(candidate);
+            else { busyPorts.Remove(candidate); silentPorts.Add(candidate); }
+        }
+
+        portName = savedPort;
+        baudRate = savedBaud;
+        Status = "remote not found";
+        scan = null;
+    }
+
+    /// <summary>With no remote connected, rescan when a port appears or a busy one may have freed up.</summary>
+    void WatchForRemote()
+    {
+        if (!autoConnect || scan != null || IsOpen || Time.unscaledTime < nextPortCheck) return;
+        nextPortCheck = Time.unscaledTime + 3f;
+        var ports = AvailablePorts();
+        bool changed = ports.Length != knownPorts.Length || ports.Except(knownPorts).Any();
+        if (changed) silentPorts.Clear();
+        knownPorts = ports;
+        // A link that was working and died (cable pulled) is worth chasing until it comes back.
+        if (changed || busyPorts.Count > 0 || EverHadSignal) scan = StartCoroutine(FindRemote());
+    }
 
     public static string[] AvailablePorts()
     {
@@ -101,7 +186,7 @@ public class SerialRc : MonoBehaviour
 
     public void Open()
     {
-        Close();
+        Close(false);            // switching ports is not the pilot disconnecting: keep the dropout state
         try
         {
             port = new SerialPort(portName, baudRate, Parity.None, 8, StopBits.One)
@@ -114,6 +199,8 @@ public class SerialRc : MonoBehaviour
             port.Open();
             running = true;
             openedAt = NowSeconds();
+            Interlocked.Exchange(ref bytesReceived, 0);
+            lastBytes = 0;
             threadError = null;
             reader = new Thread(ReadLoop) { IsBackground = true, Name = "SerialRc" };
             reader.Start();
@@ -128,7 +215,9 @@ public class SerialRc : MonoBehaviour
         }
     }
 
-    public void Close()
+    /// <summary>Close the port. <paramref name="deliberate"/> is false when the link died on its own
+    /// (cable pulled, board reset): that is a dropout the failsafe must still see.</summary>
+    public void Close(bool deliberate = true)
     {
         running = false;
         if (reader != null) { reader.Join(200); reader = null; }
@@ -139,8 +228,23 @@ public class SerialRc : MonoBehaviour
             port = null;
         }
         HasSignal = false;
-        EverHadSignal = false;      // deliberately unplugged is not a dropout
+        if (deliberate) EverHadSignal = false;      // deliberately disconnected is not a dropout
         Status = "not connected";
+    }
+
+    /// <summary>Look for the remote now, on every port - used when auto-connect is switched on.</summary>
+    public void StartScan()
+    {
+        if (scan != null || IsOpen) return;
+        silentPorts.Clear();
+        scan = StartCoroutine(FindRemote());
+    }
+
+    /// <summary>The pilot picked a port by hand: stop the finder from overriding the choice.</summary>
+    public void StopScan()
+    {
+        if (scan != null) StopCoroutine(scan);
+        scan = null;
     }
 
     static double NowSeconds() => DateTime.UtcNow.Ticks / (double)TimeSpan.TicksPerSecond;
@@ -206,6 +310,7 @@ public class SerialRc : MonoBehaviour
             try { read = port.Read(buffer, 0, buffer.Length); }
             catch (TimeoutException) { continue; }
             catch (Exception e) { threadError = e.Message; break; }
+            Interlocked.Add(ref bytesReceived, read);
             for (int i = 0; i < read; i++) FeedByte(buffer[i]);
         }
     }
@@ -296,7 +401,16 @@ public class SerialRc : MonoBehaviour
             frames = frameCount;
         }
 
-        if (threadError != null) { LastError = threadError; Status = $"{portName}: {threadError}"; Close(); return; }
+        if (threadError != null)
+        {
+            // The link died by itself (cable pulled, board reset): a dropout the failsafe must see,
+            // not a disconnect. Report it and let the finder watch for the port coming back.
+            LastError = threadError;
+            threadError = null;
+            Close(false);
+            Status = $"{portName}: {LastError}";
+        }
+        WatchForRemote();
 
         SecondsSinceFrame = (float)(NowSeconds() - stamp);
         // Signal means frames are arriving, not merely that a port is open: a port can be open
@@ -309,9 +423,14 @@ public class SerialRc : MonoBehaviour
         {
             FramesPerSecond = (frames - lastFrameCount) / rateTimer;
             lastFrameCount = frames;
+            long bytes = Interlocked.Read(ref bytesReceived);
+            BytesPerSecond = (bytes - lastBytes) / rateTimer;
+            lastBytes = bytes;
             rateTimer = 0f;
         }
-        if (IsOpen) Status = HasSignal ? $"{portName}  {FramesPerSecond:0} Hz" : $"{portName}  NO SIGNAL";
+        if (IsOpen) Status = HasSignal ? $"{portName}  {FramesPerSecond:0} Hz"
+                           : BytesPerSecond > 20f ? $"{portName}  data arriving, but not as {protocol} frames"
+                           : $"{portName}  NO SIGNAL";
         else if (HasSignal) Status = $"replay  {FramesPerSecond:0} Hz";
 
         if (!HasSignal)
@@ -396,6 +515,17 @@ public class SerialRc : MonoBehaviour
         if (ends.Length == 3)
         {
             int.TryParse(ends[0], out usMin); int.TryParse(ends[1], out usMid); int.TryParse(ends[2], out usMax);
+        }
+
+        // Settings saved before the remote finder existed: auto-connect was off by default and the
+        // protocol stayed wherever it was last clicked - which is how a Text remote ended up being
+        // silently ignored as Crsf. Move them onto the finder once; later choices are respected.
+        if (PlayerPrefs.GetInt("rc.v", 1) < 2)
+        {
+            protocol = Protocol.Auto;
+            autoConnect = true;
+            PlayerPrefs.SetInt("rc.v", 2);
+            SaveSettings();
         }
     }
 }

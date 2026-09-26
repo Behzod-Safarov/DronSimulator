@@ -149,12 +149,26 @@ public class DevRemote : MonoBehaviour
                 Debug.Log($"[DevRemote] replaying {rcBytes.Length} bytes of transmitter data");
                 break;
             }
+            case "rcopen":
+            {
+                // Open a real port without touching the saved settings: rcopen COM9 [115200] [text]
+                var rc = drone.GetComponent<SerialRc>();
+                rc.StopScan();
+                rc.portName = p[1];
+                if (p.Length > 2) rc.baudRate = int.Parse(p[2]);
+                if (p.Length > 3) rc.protocol = (SerialRc.Protocol)Enum.Parse(typeof(SerialRc.Protocol), p[3], true);
+                rc.Open();
+                Debug.Log($"[DevRemote] rcopen {rc.portName} {rc.baudRate} {rc.protocol}: open={rc.IsOpen} status=[{rc.Status}] error=[{rc.LastError}]");
+                break;
+            }
+            case "rcclose": drone.GetComponent<SerialRc>().Close(); break;
+            case "rcscan": { var rc = drone.GetComponent<SerialRc>(); rc.Close(); rc.StartScan(); break; }
             case "rcstop": rcTarget = null; rcBytes = null; Debug.Log("[DevRemote] transmitter replay stopped"); break;
             case "rc":
             {
                 var rc = drone.GetComponent<SerialRc>();
                 var us = rc.Channels_us;
-                Debug.Log($"[DevRemote] rc signal={rc.HasSignal} calc={rc.SecondsSinceFrame < rc.failsafeSeconds} open={rc.IsOpen} enabled={rc.enabled} status=[{rc.Status}] age={rc.SecondsSinceFrame:0.000}s fail={rc.failsafeSeconds} {rc.FramesPerSecond:0}Hz ch={us[0]},{us[1]},{us[2]},{us[3]},{us[4]},{us[5]} roll={rc.Roll:0.00} pitch={rc.Pitch:0.00} yaw={rc.Yaw:0.00} thr={rc.Throttle:0.00} arm={rc.ArmSwitch} mode={rc.ModeSwitch}");
+                Debug.Log($"[DevRemote] rc signal={rc.HasSignal} calc={rc.SecondsSinceFrame < rc.failsafeSeconds} open={rc.IsOpen} enabled={rc.enabled} status=[{rc.Status}] age={rc.SecondsSinceFrame:0.000}s fail={rc.failsafeSeconds} {rc.FramesPerSecond:0}Hz {rc.BytesPerSecond:0}B/s src=[{drone.GetComponent<PilotInput>().Source}] ch={us[0]},{us[1]},{us[2]},{us[3]},{us[4]},{us[5]} roll={rc.Roll:0.00} pitch={rc.Pitch:0.00} yaw={rc.Yaw:0.00} thr={rc.Throttle:0.00} arm={rc.ArmSwitch} mode={rc.ModeSwitch}");
                 break;
             }
             case "bounds":

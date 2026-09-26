@@ -53,9 +53,15 @@ mapping is saved. Flying with the real radio is what makes sim hours transfer to
 A radio with no HID mode still speaks its link protocol out of a serial pin, and the trainer
 reads that stream directly - the same bytes a flight controller sees. Wire the transmitter
 module's (or receiver's) **TX** to a USB-TTL adapter's **RX**, join the **grounds**, and leave
-the rest alone. Then **Tab → Pult UART (serial)**: pick the **Port** and **Baud**, choose the
-protocol, press **Connect**. The CH1-CH6 bars move with the sticks, which is the quickest way
-to see whether the channel order is what you think it is.
+the rest alone.
+
+**Then plug it in and start the game - that's all.** The remote finder tries the last port that
+worked and then every other one, at 115200 and 420000 baud, decoding both formats, and keeps the
+first port that actually carries frames. The COM number can change with every USB socket; it
+does not matter. Pull the cable and it keeps looking until the remote comes back. **Tab → Pult
+UART (serial)** shows what it found, with CH1-CH6 bars that move with the sticks - the quickest
+way to see whether the channel order is what you think it is. Picking a port by hand and pressing
+**Connect** overrides the finder; untick *Pultni avtomatik topish va ulash* to turn it off.
 
 | Protocol | Frame on the wire | Baud | Comes from |
 |----------|-------------------|------|------------|
